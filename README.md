@@ -2,7 +2,9 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Safety](https://img.shields.io/badge/safety-critical-red.svg)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/mahii6991/drone-swarm-system/ci.yml?branch=main)](https://github.com/mahii6991/drone-swarm-system/actions)
+[![GitHub Stars](https://img.shields.io/github/stars/mahii6991/drone-swarm-system?style=social)](https://github.com/mahii6991/drone-swarm-system/stargazers)
 
 A world-class, safety-critical drone swarm communication system written in **Rust**, featuring military-grade security, consensus algorithms, and federated learning for autonomous swarm coordination.
 
@@ -138,7 +140,7 @@ A world-class, safety-critical drone swarm communication system written in **Rus
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/drone-swarm-system.git
+git clone https://github.com/mahii6991/drone-swarm-system.git
 cd drone-swarm-system
 
 # Build the project

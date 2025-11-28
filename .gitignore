@@ -81,8 +81,6 @@ secrets/
 *.crt
 credentials.json
 
-# Internal documentation (keep only README.md public)
-*.md
-!README.md
+# Internal documentation (allow public docs, ignore internal)
 Documentation/
 docs/internal/
