@@ -360,9 +360,10 @@ impl ConsensusEngine {
                     } else {
                         // Append entries
                         for entry in entries {
-                            if entry.index as usize <= self.log.len() {
+                            let index = entry.index as usize;
+                            if index <= self.log.len() {
                                 // Replace conflicting entry
-                                self.log[entry.index as usize - 1] = entry;
+                                self.log[index - 1] = entry;
                             } else {
                                 self.log.push(entry).map_err(|_| SwarmError::ResourceExhausted)?;
                             }

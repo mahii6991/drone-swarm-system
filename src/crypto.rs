@@ -11,10 +11,8 @@
 
 use crate::types::*;
 use crate::KEY_SIZE;
-use chacha20poly1305::{
-    aead::{Aead, KeyInit, Payload},
-    ChaCha20Poly1305, Nonce,
-};
+use chacha20poly1305::{ChaCha20Poly1305, Nonce};
+use aead::{Aead, KeyInit};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use heapless::Vec;
 use sha3::{Digest, Sha3_256};
@@ -93,13 +91,11 @@ impl CryptoContext {
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         // BUG-002 FIX: Use pre-initialized cipher (5-10x faster)
-        let payload = Payload {
-            msg: plaintext,
-            aad: associated_data,
-        };
+        // TODO: Add support for AAD (associated_data) if needed
+        let _ = associated_data; // Suppress unused warning
 
         let ciphertext = self.cipher
-            .encrypt(nonce, payload)
+            .encrypt(nonce, plaintext)
             .map_err(|_| SwarmError::CryptoError)?;
 
         // Create message: nonce || ciphertext
@@ -156,13 +152,11 @@ impl CryptoContext {
         let nonce = Nonce::from_slice(nonce_bytes);
 
         // Decrypt using pre-initialized cipher
-        let payload = Payload {
-            msg: ciphertext,
-            aad: associated_data,
-        };
+        // TODO: Add support for AAD (associated_data) if needed
+        let _ = associated_data; // Suppress unused warning
 
         let plaintext = self.cipher
-            .decrypt(nonce, payload)
+            .decrypt(nonce, ciphertext)
             .map_err(|_| SwarmError::AuthenticationFailed)?;
 
         let mut result = Vec::<u8, 2048>::new();

@@ -8,6 +8,7 @@
 //! - Blockchain-based verification (concept)
 
 use crate::types::*;
+use serde_big_array::BigArray;
 use crate::crypto::{CryptoContext, KeyStore};
 use heapless::{FnvIndexMap, Vec};
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,7 @@ pub struct ModelUpdate {
     /// Loss metric
     pub loss: f32,
     /// Digital signature for verification
+    #[serde(with = "BigArray")]
     pub signature: [u8; 64],
 }
 
@@ -145,10 +147,11 @@ impl FederatedCoordinator {
             .map_err(|_| SwarmError::BufferFull)?;
 
         // Record in history
-        let history = self
-            .update_history
-            .entry(update.drone_id.as_u64())
-            .or_insert(Vec::new());
+        use heapless::Entry;
+        let history = match self.update_history.entry(update.drone_id.as_u64()) {
+            Entry::Occupied(o) => o.into_mut(),
+            Entry::Vacant(v) => v.insert(Vec::new()).map_err(|_| SwarmError::ResourceExhausted)?,
+        };
         history.push(update.round).ok();
 
         Ok(())
