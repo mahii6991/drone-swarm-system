@@ -404,13 +404,17 @@ impl TaskAllocator {
         self.tasks.sort_by(|a, b| b.priority.cmp(&a.priority));
 
         // Allocate each task to nearest available drone
-        for task in &mut self.tasks {
-            if !task.completed {
-                let nearest = self.find_nearest_drone(&task.target, drone_states);
+        // Use index-based iteration to avoid borrow checker issues
+        let task_count = self.tasks.len();
+        for i in 0..task_count {
+            if !self.tasks[i].completed {
+                let target = self.tasks[i].target;
+                let task_id = self.tasks[i].task_id;
+                let nearest = self.find_nearest_drone(&target, drone_states);
                 if let Some(drone_id) = nearest {
-                    task.assigned_drones.clear();
-                    task.assigned_drones.push(drone_id).ok();
-                    self.assignments.insert(task.task_id, drone_id.as_u64()).ok();
+                    self.tasks[i].assigned_drones.clear();
+                    self.tasks[i].assigned_drones.push(drone_id).ok();
+                    self.assignments.insert(task_id, drone_id.as_u64()).ok();
                 }
             }
         }

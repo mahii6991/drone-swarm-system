@@ -346,28 +346,28 @@ impl MeshNetwork {
         &mut self,
         source: DroneId,
         destination: DroneId,
-        sequence: u32,
+        _sequence: u32,
     ) -> Result<()> {
         if destination == self.local_id {
             // We are the destination - send route reply
-            let reply = NetworkMessage::RouteReply {
+            let _reply = NetworkMessage::RouteReply {
                 source: destination,
                 destination: source,
                 next_hop: self.local_id,
                 hop_count: 0,
             };
-            // Send reply back
+            // TODO: Send reply back
         } else if let Some(route) = self.routes.get(&destination.as_u64()) {
             // We have a route - send reply
-            let reply = NetworkMessage::RouteReply {
+            let _reply = NetworkMessage::RouteReply {
                 source: destination,
                 destination: source,
                 next_hop: route.next_hop,
                 hop_count: route.hop_count,
             };
-            // Send reply back
+            // TODO: Send reply back
         } else {
-            // Forward route request
+            // TODO: Forward route request
         }
         Ok(())
     }
@@ -406,11 +406,11 @@ impl MeshNetwork {
     /// Handle link state update
     fn handle_link_state_update(
         &mut self,
-        sender: DroneId,
-        neighbors: Vec<(DroneId, f32), MAX_NEIGHBORS>,
-        sequence: u32,
+        _sender: DroneId,
+        _neighbors: Vec<(DroneId, f32), MAX_NEIGHBORS>,
+        _sequence: u32,
     ) -> Result<()> {
-        // Update routing table based on link state information
+        // TODO: Update routing table based on link state information
         // This would implement a distance vector or link state routing protocol
         Ok(())
     }
