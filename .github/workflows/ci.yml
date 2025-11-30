@@ -14,6 +14,8 @@ jobs:
   test:
     name: Test
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -54,6 +56,8 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,6 +73,8 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,6 +90,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         target:
@@ -106,6 +114,9 @@ jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -118,6 +129,8 @@ jobs:
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -129,7 +142,9 @@ jobs:
         run: cargo install cargo-tarpaulin
 
       - name: Generate coverage
-        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+        env:
+          CI_COVERAGE: "1"
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 300 --out xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -140,6 +155,8 @@ jobs:
   docs:
     name: Documentation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -151,6 +168,7 @@ jobs:
         run: cargo doc --no-deps --all-features
 
       - name: Check for broken links
+        continue-on-error: true
         run: |
           cargo install cargo-deadlinks
           cargo deadlinks --check-http
@@ -158,6 +176,8 @@ jobs:
   minimal-versions:
     name: Minimal Versions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

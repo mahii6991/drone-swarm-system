@@ -280,9 +280,7 @@ fn compare_gwo_variants() {
 
         let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
-        let result = optimizer
-            .optimize(rosenbrock)
-            .expect("Optimization failed");
+        let result = optimizer.optimize(rosenbrock).expect("Optimization failed");
 
         println!("{}:", name);
         println!("  Best fitness: {:.6}", result.fitness);

@@ -21,6 +21,12 @@ use drone_swarm_system::*;
 
 #[test]
 fn stress_crypto_millions_of_encryptions() {
+    // Skip expensive test during coverage runs to avoid timeout
+    if std::env::var("CI_COVERAGE").is_ok() {
+        println!("⏭️  Skipping expensive test under coverage (use 'cargo test' to run)");
+        return;
+    }
+
     println!("\n🔥 STRESS TEST: 1 million encryptions");
 
     let mut ctx = CryptoContext::new([42u8; 32]);
