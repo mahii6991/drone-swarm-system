@@ -5,10 +5,10 @@
 //! 2. Constraint Handling (Boundaries, Inequalities, Collision, Energy, No-Fly Zones)
 //! 3. Multi-Swarm Coordination (Hierarchical, Decentralized, Fault-Tolerant)
 
-use crate::types::*;
 use crate::pso::*;
-use heapless::{FnvIndexMap, Vec};
+use crate::types::*;
 use core::f32;
+use heapless::{FnvIndexMap, Vec};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FEATURE 1: ADVANCED TOPOLOGY SUPPORT
@@ -59,7 +59,9 @@ impl TopologyManager {
                     neighbors.push(j).map_err(|_| SwarmError::BufferFull)?;
                 }
             }
-            self.adjacency.insert(i, neighbors).map_err(|_| SwarmError::ResourceExhausted)?;
+            self.adjacency
+                .insert(i, neighbors)
+                .map_err(|_| SwarmError::ResourceExhausted)?;
         }
         Ok(())
     }
@@ -78,7 +80,9 @@ impl TopologyManager {
                     neighbors.push(right).ok();
                 }
             }
-            self.adjacency.insert(i, neighbors).map_err(|_| SwarmError::ResourceExhausted)?;
+            self.adjacency
+                .insert(i, neighbors)
+                .map_err(|_| SwarmError::ResourceExhausted)?;
         }
         Ok(())
     }
@@ -109,7 +113,9 @@ impl TopologyManager {
                 neighbors.push(row * grid_size + (col + 1)).ok();
             }
 
-            self.adjacency.insert(i, neighbors).map_err(|_| SwarmError::ResourceExhausted)?;
+            self.adjacency
+                .insert(i, neighbors)
+                .map_err(|_| SwarmError::ResourceExhausted)?;
         }
         Ok(())
     }
@@ -136,7 +142,9 @@ impl TopologyManager {
                 neighbors.push(right_child).ok();
             }
 
-            self.adjacency.insert(i, neighbors).map_err(|_| SwarmError::ResourceExhausted)?;
+            self.adjacency
+                .insert(i, neighbors)
+                .map_err(|_| SwarmError::ResourceExhausted)?;
         }
         Ok(())
     }
@@ -154,14 +162,19 @@ impl TopologyManager {
                     neighbors.push(neighbor).ok();
                 }
             }
-            self.adjacency.insert(i, neighbors).map_err(|_| SwarmError::ResourceExhausted)?;
+            self.adjacency
+                .insert(i, neighbors)
+                .map_err(|_| SwarmError::ResourceExhausted)?;
         }
         Ok(())
     }
 
     /// Get neighbors of a particle
     pub fn get_neighbors(&self, particle_id: usize) -> &[usize] {
-        self.adjacency.get(&particle_id).map(|v| v.as_slice()).unwrap_or(&[])
+        self.adjacency
+            .get(&particle_id)
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
     }
 
     /// Adapt topology dynamically based on performance
@@ -265,11 +278,18 @@ impl ConstraintHandler {
 
     /// Add constraint
     pub fn add_constraint(&mut self, constraint: Constraint) -> Result<()> {
-        self.constraints.push(constraint).map_err(|_| SwarmError::BufferFull)
+        self.constraints
+            .push(constraint)
+            .map_err(|_| SwarmError::BufferFull)
     }
 
     /// Evaluate constraints and compute penalty
-    pub fn evaluate_penalty<F>(&self, position: &[f32], particle_id: usize, constraint_fns: &[F]) -> f32
+    pub fn evaluate_penalty<F>(
+        &self,
+        position: &[f32],
+        particle_id: usize,
+        constraint_fns: &[F],
+    ) -> f32
     where
         F: Fn(&[f32]) -> f32,
     {
@@ -303,7 +323,10 @@ impl ConstraintHandler {
                         0.0
                     }
                 }
-                Constraint::Collision { min_distance, weight } => {
+                Constraint::Collision {
+                    min_distance,
+                    weight,
+                } => {
                     // BUG-007 FIX: Implement collision detection
                     let mut collision_penalty = 0.0;
 
@@ -335,7 +358,11 @@ impl ConstraintHandler {
                         0.0
                     }
                 }
-                Constraint::NoFlyZone { center, radius, weight } => {
+                Constraint::NoFlyZone {
+                    center,
+                    radius,
+                    weight,
+                } => {
                     // Check if position violates no-fly zone
                     if position.len() >= 3 {
                         let pos = Position {
@@ -416,7 +443,7 @@ impl ConstraintHandler {
     where
         F: Fn(&[f32]) -> f32,
     {
-        self.evaluate_penalty(position, constraint_fns) < 1e-6
+        self.evaluate_penalty(position, usize::MAX, constraint_fns) < 1e-6
     }
 
     /// Compute energy consumption (simplified)
@@ -498,7 +525,9 @@ impl MultiSwarmCoordinator {
 
     /// Add sub-swarm
     pub fn add_sub_swarm(&mut self, sub_swarm: SubSwarm) -> Result<()> {
-        self.sub_swarms.push(sub_swarm).map_err(|_| SwarmError::BufferFull)
+        self.sub_swarms
+            .push(sub_swarm)
+            .map_err(|_| SwarmError::BufferFull)
     }
 
     /// Coordinate one iteration across all sub-swarms
@@ -575,7 +604,9 @@ impl MultiSwarmCoordinator {
         let mut best_positions = Vec::<Vec<f32, MAX_DIMENSIONS>, 10>::new();
 
         for sub_swarm in &self.sub_swarms {
-            best_positions.push(sub_swarm.optimizer.best_position().clone()).ok();
+            best_positions
+                .push(sub_swarm.optimizer.best_position().clone())
+                .ok();
         }
 
         for i in 0..n {
@@ -626,29 +657,33 @@ mod tests {
         let mut handler = ConstraintHandler::new(PenaltyMethod::Static);
 
         // Add no-fly zone
-        handler.add_constraint(Constraint::NoFlyZone {
-            center: Position { x: 50.0, y: 50.0, z: 10.0 },
-            radius: 20.0,
-            weight: 1000.0,
-        }).unwrap();
+        handler
+            .add_constraint(Constraint::NoFlyZone {
+                center: Position {
+                    x: 50.0,
+                    y: 50.0,
+                    z: 10.0,
+                },
+                radius: 20.0,
+                weight: 1000.0,
+            })
+            .unwrap();
 
         // Position inside no-fly zone
         let pos_inside = [45.0, 45.0, 10.0];
-        let penalty_inside = handler.evaluate_penalty(&pos_inside, 0, &[]);
+        let dummy_constraints: &[fn(&[f32]) -> f32] = &[];
+        let penalty_inside = handler.evaluate_penalty(&pos_inside, 0, dummy_constraints);
         assert!(penalty_inside > 0.0);
 
         // Position outside no-fly zone
         let pos_outside = [100.0, 100.0, 10.0];
-        let penalty_outside = handler.evaluate_penalty(&pos_outside, 0, &[]);
+        let penalty_outside = handler.evaluate_penalty(&pos_outside, 0, dummy_constraints);
         assert_eq!(penalty_outside, 0.0);
     }
 
     #[test]
     fn test_multi_swarm() {
-        let coordinator = MultiSwarmCoordinator::new(
-            SharingStrategy::BestSolution,
-            10
-        );
+        let coordinator = MultiSwarmCoordinator::new(SharingStrategy::BestSolution, 10);
 
         assert_eq!(coordinator.num_sub_swarms(), 0);
     }

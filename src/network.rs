@@ -7,8 +7,8 @@
 //! - Automatic neighbor discovery
 //! - Network resilience and self-healing
 
-use crate::types::*;
 use crate::crypto::CryptoContext;
+use crate::types::*;
 use heapless::{FnvIndexMap, Vec};
 use serde::{Deserialize, Serialize};
 
@@ -31,10 +31,7 @@ pub enum NetworkMessage {
         sequence: u32,
     },
     /// Heartbeat to maintain connections
-    Heartbeat {
-        sender: DroneId,
-        timestamp: u64,
-    },
+    Heartbeat { sender: DroneId, timestamp: u64 },
     /// Data message
     Data {
         source: DroneId,
@@ -161,7 +158,11 @@ impl MeshNetwork {
     }
 
     /// Process incoming network message
-    pub fn process_message(&mut self, message: NetworkMessage, sender_addr: NetworkAddress) -> Result<Option<Vec<u8, 1024>>> {
+    pub fn process_message(
+        &mut self,
+        message: NetworkMessage,
+        sender_addr: NetworkAddress,
+    ) -> Result<Option<Vec<u8, 1024>>> {
         match message {
             NetworkMessage::Hello {
                 sender,
@@ -303,8 +304,7 @@ impl MeshNetwork {
         }
 
         // Check overflow before incrementing
-        let new_hop_count = hop_count.checked_add(1)
-            .ok_or(SwarmError::NetworkError)?;
+        let new_hop_count = hop_count.checked_add(1).ok_or(SwarmError::NetworkError)?;
 
         if new_hop_count > MAX_NETWORK_HOPS {
             self.stats.messages_dropped += 1;

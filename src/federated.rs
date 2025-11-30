@@ -7,12 +7,12 @@
 //! - Privacy-preserving gradient sharing
 //! - Blockchain-based verification (concept)
 
-use crate::types::*;
-use serde_big_array::BigArray;
 use crate::crypto::{CryptoContext, KeyStore};
+use crate::types::*;
+use ed25519_dalek::{Signature, Verifier};
 use heapless::{FnvIndexMap, Vec};
 use serde::{Deserialize, Serialize};
-use ed25519_dalek::{Signature, Verifier};
+use serde_big_array::BigArray;
 
 /// Maximum model parameters (simplified)
 pub const MAX_MODEL_PARAMS: usize = 1000;
@@ -115,24 +115,33 @@ impl FederatedCoordinator {
 
         // Serialize update data (without signature)
         let mut update_data = Vec::<u8, 2048>::new();
-        update_data.extend_from_slice(&update.round.to_le_bytes())
+        update_data
+            .extend_from_slice(&update.round.to_le_bytes())
             .map_err(|_| SwarmError::BufferFull)?;
         for &param in &update.parameters {
-            update_data.extend_from_slice(&param.to_le_bytes())
+            update_data
+                .extend_from_slice(&param.to_le_bytes())
                 .map_err(|_| SwarmError::BufferFull)?;
         }
-        update_data.extend_from_slice(&update.sample_count.to_le_bytes())
+        update_data
+            .extend_from_slice(&update.sample_count.to_le_bytes())
             .map_err(|_| SwarmError::BufferFull)?;
-        update_data.extend_from_slice(&update.loss.to_le_bytes())
+        update_data
+            .extend_from_slice(&update.loss.to_le_bytes())
             .map_err(|_| SwarmError::BufferFull)?;
 
         // Verify signature
         let signature = Signature::from_bytes(&update.signature);
-        public_key.verify(&update_data, &signature)
+        public_key
+            .verify(&update_data, &signature)
             .map_err(|_| SwarmError::AuthenticationFailed)?;
 
         // Check for duplicate submission
-        if self.pending_updates.iter().any(|u| u.drone_id == update.drone_id) {
+        if self
+            .pending_updates
+            .iter()
+            .any(|u| u.drone_id == update.drone_id)
+        {
             return Err(SwarmError::InvalidMessage);
         }
 
@@ -150,7 +159,9 @@ impl FederatedCoordinator {
         use heapless::Entry;
         let history = match self.update_history.entry(update.drone_id.as_u64()) {
             Entry::Occupied(o) => o.into_mut(),
-            Entry::Vacant(v) => v.insert(Vec::new()).map_err(|_| SwarmError::ResourceExhausted)?,
+            Entry::Vacant(v) => v
+                .insert(Vec::new())
+                .map_err(|_| SwarmError::ResourceExhausted)?,
         };
         history.push(update.round).ok();
 
@@ -402,7 +413,10 @@ impl SecureAggregation {
     }
 
     /// Aggregate encrypted updates
-    pub fn aggregate_encrypted(&self, _updates: &[Vec<u8, 2048>]) -> Result<Vec<f32, MAX_MODEL_PARAMS>> {
+    pub fn aggregate_encrypted(
+        &self,
+        _updates: &[Vec<u8, 2048>],
+    ) -> Result<Vec<f32, MAX_MODEL_PARAMS>> {
         // Simplified: in production, perform secure aggregation
         Ok(Vec::new())
     }
@@ -439,7 +453,7 @@ mod tests {
 
     #[test]
     fn test_aggregation() {
-        use ed25519_dalek::{SigningKey, Signer};
+        use ed25519_dalek::{Signer, SigningKey};
 
         let model = GlobalModel::new(5).unwrap();
         let mut key_store = KeyStore::new();
@@ -453,7 +467,9 @@ mod tests {
             let signing_key = SigningKey::from_bytes(&seed);
             let verifying_key = signing_key.verifying_key();
 
-            key_store.add_key(DroneId::new(i as u64), verifying_key).unwrap();
+            key_store
+                .add_key(DroneId::new(i as u64), verifying_key)
+                .unwrap();
             signing_keys.push(signing_key).unwrap();
         }
 
@@ -474,7 +490,9 @@ mod tests {
                 update_data.extend_from_slice(&param.to_le_bytes()).unwrap();
             }
             update_data.extend_from_slice(&10u32.to_le_bytes()).unwrap(); // sample_count
-            update_data.extend_from_slice(&0.5f32.to_le_bytes()).unwrap(); // loss
+            update_data
+                .extend_from_slice(&0.5f32.to_le_bytes())
+                .unwrap(); // loss
 
             // Sign the update
             let signature = signing_keys[(i - 1) as usize].sign(&update_data);

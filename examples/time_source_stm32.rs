@@ -12,15 +12,15 @@
 //! cargo build --example time_source_stm32 --target thumbv7em-none-eabihf --release
 //! ```
 
-#![no_std]
-#![no_main]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_main)]
 
 // For demonstration - in real code, use your HAL crate
 // use stm32f4xx_hal as hal;
 // use cortex_m_rt::entry;
 
 #[cfg(all(target_arch = "arm", not(feature = "std")))]
-use drone_swarm_system::{init_time_source, get_time_ms, delay_ms};
+use drone_swarm_system::{delay_ms, get_time_ms, init_time_source};
 
 #[cfg(all(target_arch = "arm", not(feature = "std")))]
 use panic_halt as _;
@@ -94,7 +94,7 @@ fn main() -> ! {
 // For std builds (testing on desktop)
 #[cfg(feature = "std")]
 fn main() {
-    use drone_swarm_system::{init_time_source, get_time_ms, delay_ms};
+    use drone_swarm_system::{delay_ms, get_time_ms, init_time_source};
 
     println!("STM32 Time Source Example (running on std for testing)");
 

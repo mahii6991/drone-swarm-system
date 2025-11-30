@@ -1,8 +1,8 @@
 //! Core type definitions for the drone swarm system
 
 use core::fmt;
-use serde::{Deserialize, Serialize};
 use heapless::{String, Vec};
+use serde::{Deserialize, Serialize};
 
 /// Result type for swarm operations
 pub type Result<T> = core::result::Result<T, SwarmError>;
@@ -122,6 +122,8 @@ pub enum SwarmError {
     ConfigError,
     /// Swarm size exceeded
     SwarmSizeExceeded,
+    /// Invalid parameter provided
+    InvalidParameter,
 }
 
 impl fmt::Display for SwarmError {
@@ -140,6 +142,7 @@ impl fmt::Display for SwarmError {
             SwarmError::HardwareFault => write!(f, "Hardware fault detected"),
             SwarmError::ConfigError => write!(f, "Configuration error"),
             SwarmError::SwarmSizeExceeded => write!(f, "Swarm size exceeded"),
+            SwarmError::InvalidParameter => write!(f, "Invalid parameter"),
         }
     }
 }

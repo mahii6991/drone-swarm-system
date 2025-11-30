@@ -28,25 +28,25 @@
 #![allow(missing_docs)]
 
 pub mod config;
-pub mod crypto;
-pub mod network;
 pub mod consensus;
+pub mod crypto;
+pub mod fault_tolerance;
 pub mod federated;
+pub mod network;
+pub mod security;
 pub mod swarm;
 pub mod types;
-pub mod security;
-pub mod fault_tolerance;
 // TODO: Fix borrow checker errors before re-enabling
 // See KNOWN_ISSUES.md and FIXES_APPLIED.md for details
-// pub mod pso;
-// pub mod pso_advanced;
-// pub mod aco;
-// pub mod gwo;
+pub mod aco;
+pub mod gwo;
+pub mod pso;
+pub mod pso_advanced;
 pub mod time_abstraction;
 
-pub use types::*;
 pub use config::*;
-pub use time_abstraction::{get_time_ms, get_time_us, delay_ms, init_time_source};
+pub use time_abstraction::{delay_ms, get_time_ms, get_time_us, init_time_source};
+pub use types::*;
 
 /// Maximum number of drones in a swarm
 pub const MAX_SWARM_SIZE: usize = 100;

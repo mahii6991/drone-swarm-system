@@ -7,8 +7,8 @@
 //! - Formation optimization
 //! - Multi-objective optimization
 
-use drone_swarm_system::*;
 use drone_swarm_system::pso::*;
+use drone_swarm_system::*;
 
 fn main() -> Result<()> {
     println!("═══════════════════════════════════════════════════════");
@@ -59,9 +59,7 @@ fn example_sphere_function() -> Result<()> {
     println!("  Search space: [-100, 100]^10");
     println!("  Global minimum: f(0, 0, ..., 0) = 0\n");
 
-    let cost_fn = |x: &[f32]| -> f32 {
-        x.iter().map(|&xi| xi * xi).sum()
-    };
+    let cost_fn = |x: &[f32]| -> f32 { x.iter().map(|&xi| xi * xi).sum() };
 
     let bounds = Bounds::uniform(10, -100.0, 100.0)?;
     let options = PSOOptions::default();
@@ -71,7 +69,7 @@ fn example_sphere_function() -> Result<()> {
     print!("  Iteration: ");
 
     for i in 0..100 {
-        let cost = pso.step(&cost_fn)?;
+        let cost = pso.step(cost_fn)?;
         if i % 10 == 0 {
             print!("{} ", i);
         }
@@ -80,12 +78,14 @@ fn example_sphere_function() -> Result<()> {
     println!("\n");
     println!("  ✓ Optimization complete!");
     println!("  Best cost: {:.6}", pso.best_cost());
-    println!("  Best position (first 5 dims): [{:.4}, {:.4}, {:.4}, {:.4}, {:.4}]",
-             pso.best_position()[0],
-             pso.best_position()[1],
-             pso.best_position()[2],
-             pso.best_position()[3],
-             pso.best_position()[4]);
+    println!(
+        "  Best position (first 5 dims): [{:.4}, {:.4}, {:.4}, {:.4}, {:.4}]",
+        pso.best_position()[0],
+        pso.best_position()[1],
+        pso.best_position()[2],
+        pso.best_position()[3],
+        pso.best_position()[4]
+    );
 
     Ok(())
 }
@@ -102,9 +102,10 @@ fn example_rastrigin_function() -> Result<()> {
         let n = x.len() as f32;
         let pi = core::f32::consts::PI;
 
-        10.0 * n + x.iter()
-            .map(|&xi| xi * xi - 10.0 * libm::cosf(2.0 * pi * xi))
-            .sum::<f32>()
+        10.0 * n
+            + x.iter()
+                .map(|&xi| xi * xi - 10.0 * libm::cosf(2.0 * pi * xi))
+                .sum::<f32>()
     };
 
     let bounds = Bounds::uniform(5, -5.12, 5.12)?;
@@ -117,7 +118,7 @@ fn example_rastrigin_function() -> Result<()> {
     print!("  Iteration: ");
 
     for i in 0..200 {
-        pso.step(&cost_fn)?;
+        pso.step(cost_fn)?;
         if i % 20 == 0 {
             print!("{} ", i);
         }
@@ -126,20 +127,30 @@ fn example_rastrigin_function() -> Result<()> {
     println!("\n");
     println!("  ✓ Optimization complete!");
     println!("  Best cost: {:.6}", pso.best_cost());
-    println!("  Best position: [{:.4}, {:.4}, {:.4}, {:.4}, {:.4}]",
-             pso.best_position()[0],
-             pso.best_position()[1],
-             pso.best_position()[2],
-             pso.best_position()[3],
-             pso.best_position()[4]);
+    println!(
+        "  Best position: [{:.4}, {:.4}, {:.4}, {:.4}, {:.4}]",
+        pso.best_position()[0],
+        pso.best_position()[1],
+        pso.best_position()[2],
+        pso.best_position()[3],
+        pso.best_position()[4]
+    );
 
     Ok(())
 }
 
 /// Example 3: Drone path planning with obstacles
 fn example_path_planning() -> Result<()> {
-    let start = Position { x: 0.0, y: 0.0, z: 10.0 };
-    let goal = Position { x: 500.0, y: 500.0, z: 10.0 };
+    let start = Position {
+        x: 0.0,
+        y: 0.0,
+        z: 10.0,
+    };
+    let goal = Position {
+        x: 500.0,
+        y: 500.0,
+        z: 10.0,
+    };
 
     println!("  Start: ({:.1}, {:.1}, {:.1})", start.x, start.y, start.z);
     println!("  Goal:  ({:.1}, {:.1}, {:.1})", goal.x, goal.y, goal.z);
@@ -148,9 +159,30 @@ fn example_path_planning() -> Result<()> {
     let mut optimizer = DronePathOptimizer::new(start, goal, 5)?;
 
     // Add obstacles
-    optimizer.add_obstacle(Position { x: 150.0, y: 150.0, z: 10.0 }, 50.0)?;
-    optimizer.add_obstacle(Position { x: 300.0, y: 200.0, z: 10.0 }, 40.0)?;
-    optimizer.add_obstacle(Position { x: 400.0, y: 400.0, z: 10.0 }, 60.0)?;
+    optimizer.add_obstacle(
+        Position {
+            x: 150.0,
+            y: 150.0,
+            z: 10.0,
+        },
+        50.0,
+    )?;
+    optimizer.add_obstacle(
+        Position {
+            x: 300.0,
+            y: 200.0,
+            z: 10.0,
+        },
+        40.0,
+    )?;
+    optimizer.add_obstacle(
+        Position {
+            x: 400.0,
+            y: 400.0,
+            z: 10.0,
+        },
+        60.0,
+    )?;
 
     println!("  Optimizing path with 5 waypoints...");
     let path = optimizer.optimize(100)?;
@@ -187,11 +219,13 @@ fn example_formation_optimization() -> Result<()> {
         // Extract drone positions
         let mut drones = heapless::Vec::<Position, 10>::new();
         for i in 0..n_drones {
-            drones.push(Position {
-                x: positions[i * 3],
-                y: positions[i * 3 + 1],
-                z: positions[i * 3 + 2],
-            }).ok();
+            drones
+                .push(Position {
+                    x: positions[i * 3],
+                    y: positions[i * 3 + 1],
+                    z: positions[i * 3 + 2],
+                })
+                .ok();
         }
 
         // Penalty for drones too close (collision)
@@ -250,11 +284,13 @@ fn example_formation_optimization() -> Result<()> {
     println!("  Optimized drone positions:");
 
     for i in 0..n_drones {
-        println!("    Drone {}: ({:.1}, {:.1}, {:.1})",
-                 i + 1,
-                 best_positions[i * 3],
-                 best_positions[i * 3 + 1],
-                 best_positions[i * 3 + 2]);
+        println!(
+            "    Drone {}: ({:.1}, {:.1}, {:.1})",
+            i + 1,
+            best_positions[i * 3],
+            best_positions[i * 3 + 1],
+            best_positions[i * 3 + 2]
+        );
     }
 
     Ok(())
@@ -281,7 +317,7 @@ fn example_comparison() -> Result<()> {
     // Global-best PSO
     println!("  Running Global-Best PSO (Star topology)...");
     let mut gbest_pso = GlobalBestPSO::new(30, 5, bounds.clone(), options)?;
-    gbest_pso.optimize(100, &cost_fn)?;
+    gbest_pso.optimize(100, cost_fn)?;
 
     println!("    Best cost: {:.6}", gbest_pso.best_cost());
 
@@ -290,7 +326,7 @@ fn example_comparison() -> Result<()> {
     let mut lbest_pso = LocalBestPSO::new(30, 5, bounds, options, 3)?;
 
     for _ in 0..100 {
-        lbest_pso.step(&cost_fn)?;
+        lbest_pso.step(cost_fn)?;
     }
 
     println!("    Best cost: {:.6}", lbest_pso.best_cost());

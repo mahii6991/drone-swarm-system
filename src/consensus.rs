@@ -309,7 +309,12 @@ impl ConsensusEngine {
     }
 
     /// Handle vote reply
-    fn handle_vote_reply(&mut self, term: u64, vote_granted: bool, _voter_id: DroneId) -> Result<()> {
+    fn handle_vote_reply(
+        &mut self,
+        term: u64,
+        vote_granted: bool,
+        _voter_id: DroneId,
+    ) -> Result<()> {
         if self.state != NodeState::Candidate {
             return Ok(());
         }
@@ -365,7 +370,9 @@ impl ConsensusEngine {
                                 // Replace conflicting entry
                                 self.log[index - 1] = entry;
                             } else {
-                                self.log.push(entry).map_err(|_| SwarmError::ResourceExhausted)?;
+                                self.log
+                                    .push(entry)
+                                    .map_err(|_| SwarmError::ResourceExhausted)?;
                             }
                         }
                         true
@@ -376,7 +383,9 @@ impl ConsensusEngine {
             } else {
                 // First entry
                 for entry in entries {
-                    self.log.push(entry).map_err(|_| SwarmError::ResourceExhausted)?;
+                    self.log
+                        .push(entry)
+                        .map_err(|_| SwarmError::ResourceExhausted)?;
                 }
                 true
             }
@@ -415,7 +424,9 @@ impl ConsensusEngine {
         }
 
         if success {
-            self.match_index.insert(follower_id.as_u64(), match_idx).ok();
+            self.match_index
+                .insert(follower_id.as_u64(), match_idx)
+                .ok();
             self.next_index
                 .insert(follower_id.as_u64(), match_idx + 1)
                 .ok();
@@ -467,7 +478,10 @@ impl ConsensusEngine {
         let next_idx = *self.next_index.get(&follower.as_u64()).unwrap_or(&1);
         let prev_log_index = if next_idx > 1 { next_idx - 1 } else { 0 };
         let prev_log_term = if prev_log_index > 0 {
-            self.log.get(prev_log_index as usize - 1).map(|e| e.term).unwrap_or(0)
+            self.log
+                .get(prev_log_index as usize - 1)
+                .map(|e| e.term)
+                .unwrap_or(0)
         } else {
             0
         };

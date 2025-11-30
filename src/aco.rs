@@ -22,8 +22,8 @@
 #![forbid(unsafe_code)]
 
 use crate::types::*;
-use heapless::Vec;
 use core::f32;
+use heapless::Vec;
 
 /// Maximum number of ants in colony
 pub const MAX_ANTS: usize = 50;
@@ -78,9 +78,12 @@ impl Position3D {
 
     /// Check if position is within bounds
     pub fn is_within_bounds(&self, min: &Position3D, max: &Position3D) -> bool {
-        self.x >= min.x && self.x <= max.x &&
-        self.y >= min.y && self.y <= max.y &&
-        self.z >= min.z && self.z <= max.z
+        self.x >= min.x
+            && self.x <= max.x
+            && self.y >= min.y
+            && self.y <= max.y
+            && self.z >= min.z
+            && self.z <= max.z
     }
 }
 
@@ -114,15 +117,12 @@ impl Obstacle {
         let fz = self.center.z - p1.z;
 
         // Project onto segment
-        let t = ((fx * dx + fy * dy + fz * dz) /
-                 (dx * dx + dy * dy + dz * dz)).max(0.0).min(1.0);
+        let t = ((fx * dx + fy * dy + fz * dz) / (dx * dx + dy * dy + dz * dz))
+            .max(0.0)
+            .min(1.0);
 
         // Closest point on segment
-        let closest = Position3D::new(
-            p1.x + t * dx,
-            p1.y + t * dy,
-            p1.z + t * dz
-        );
+        let closest = Position3D::new(p1.x + t * dx, p1.y + t * dy, p1.z + t * dz);
 
         self.collides_with(&closest)
     }
@@ -241,7 +241,11 @@ impl Ant {
         // Calculate probabilities
         for (i, pos) in candidates.iter().enumerate() {
             let distance = self.current_pos.distance_to(pos);
-            let heuristic = if distance > 0.0 { 1.0 / distance } else { 1000.0 };
+            let heuristic = if distance > 0.0 {
+                1.0 / distance
+            } else {
+                1000.0
+            };
 
             let tau = pheromones.get(i).copied().unwrap_or(1.0);
             let prob = tau.powf(ALPHA) * heuristic.powf(BETA);
@@ -291,7 +295,11 @@ impl Ant {
 
         for (i, pos) in candidates.iter().enumerate() {
             let distance = self.current_pos.distance_to(pos);
-            let heuristic = if distance > 0.0 { 1.0 / distance } else { 1000.0 };
+            let heuristic = if distance > 0.0 {
+                1.0 / distance
+            } else {
+                1000.0
+            };
             let tau = pheromones.get(i).copied().unwrap_or(1.0);
             let value = tau * heuristic;
 
@@ -371,12 +379,15 @@ impl ACOOptimizer {
 
         let mut ants = Vec::new();
         for i in 0..config.num_ants {
-            ants.push(Ant::new(i, start)).map_err(|_| SwarmError::BufferFull)?;
+            ants.push(Ant::new(i, start))
+                .map_err(|_| SwarmError::BufferFull)?;
         }
 
         let mut pheromones = Vec::new();
         for _ in 0..MAX_WAYPOINTS {
-            pheromones.push(config.pheromone_init).map_err(|_| SwarmError::BufferFull)?;
+            pheromones
+                .push(config.pheromone_init)
+                .map_err(|_| SwarmError::BufferFull)?;
         }
 
         Ok(Self {
@@ -395,7 +406,9 @@ impl ACOOptimizer {
 
     /// Add obstacle
     pub fn add_obstacle(&mut self, obstacle: Obstacle) -> Result<()> {
-        self.obstacles.push(obstacle).map_err(|_| SwarmError::BufferFull)
+        self.obstacles
+            .push(obstacle)
+            .map_err(|_| SwarmError::BufferFull)
     }
 
     /// Run optimization
@@ -439,7 +452,9 @@ impl ACOOptimizer {
             );
             waypoints.push(wp).map_err(|_| SwarmError::BufferFull)?;
         }
-        waypoints.push(self.goal).map_err(|_| SwarmError::BufferFull)?;
+        waypoints
+            .push(self.goal)
+            .map_err(|_| SwarmError::BufferFull)?;
 
         // Build path
         while ant.path.waypoints.len() < num_waypoints + 1 {
@@ -472,7 +487,8 @@ impl ACOOptimizer {
 
         // Validate and calculate cost
         let ant = &mut self.ants[ant_id];
-        ant.path.validate_against_obstacles(self.obstacles.as_slice());
+        ant.path
+            .validate_against_obstacles(self.obstacles.as_slice());
         ant.path.calculate_cost();
 
         // Update best path
@@ -496,14 +512,14 @@ impl ACOOptimizer {
                 // All ants deposit
                 for ant in &self.ants {
                     if ant.path.is_valid {
-                        self.deposit_pheromone(&ant.path)?;
+                        Self::deposit_pheromone(&mut self.pheromones, &ant.path)?;
                     }
                 }
             }
             ACOAlgorithm::MMAS | ACOAlgorithm::ACS => {
                 // Only best ant deposits
                 if self.best_path.is_valid {
-                    self.deposit_pheromone(&self.best_path)?;
+                    Self::deposit_pheromone(&mut self.pheromones, &self.best_path)?;
                 }
             }
         }
@@ -518,8 +534,8 @@ impl ACOOptimizer {
         Ok(())
     }
 
-    /// Deposit pheromone on path
-    fn deposit_pheromone(&mut self, path: &Path) -> Result<()> {
+    /// Deposit pheromone on path (static helper)
+    fn deposit_pheromone(pheromones: &mut Vec<f32, MAX_WAYPOINTS>, path: &Path) -> Result<()> {
         if path.cost == 0.0 || !path.cost.is_finite() {
             return Ok(());
         }
@@ -527,8 +543,8 @@ impl ACOOptimizer {
         let delta_tau = 1.0 / path.cost;
 
         // Deposit on all waypoints in path
-        for i in 0..path.waypoints.len().min(self.pheromones.len()) {
-            if let Some(pheromone) = self.pheromones.get_mut(i) {
+        for i in 0..path.waypoints.len().min(pheromones.len()) {
+            if let Some(pheromone) = pheromones.get_mut(i) {
                 *pheromone += delta_tau;
             }
         }

@@ -1,7 +1,7 @@
 //! Advanced security features and intrusion detection
 
-use crate::types::*;
 use crate::crypto::{CryptoContext, KeyStore, NonceTracker};
+use crate::types::*;
 use heapless::{FnvIndexMap, Vec};
 
 /// Security monitor for detecting and preventing attacks
@@ -110,10 +110,12 @@ impl RateLimiter {
 
         let entry = match self.counts.entry(drone_id.as_u64()) {
             Entry::Occupied(o) => o.into_mut(),
-            Entry::Vacant(v) => v.insert(RateLimitEntry {
-                count: 0,
-                window_start: now,
-            }).map_err(|_| SwarmError::ResourceExhausted)?,
+            Entry::Vacant(v) => v
+                .insert(RateLimitEntry {
+                    count: 0,
+                    window_start: now,
+                })
+                .map_err(|_| SwarmError::ResourceExhausted)?,
         };
 
         // Reset window if expired

@@ -10,16 +10,12 @@
 //! - Running optimization
 //! - Analyzing results
 
-#![no_std]
-#![no_main]
-
 extern crate drone_swarm_system;
 
 use drone_swarm_system::aco::*;
-use drone_swarm_system::types::*;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-#[no_mangle]
-pub extern "C" fn main() -> ! {
+fn main() {
     // Example 1: Simple 2D path planning
     example_2d_path_planning();
 
@@ -31,8 +27,6 @@ pub extern "C" fn main() -> ! {
 
     // Example 4: Real-world search & rescue scenario
     search_rescue_scenario();
-
-    loop {}
 }
 
 /// Example 1: Simple 2D path planning
@@ -73,19 +67,22 @@ fn example_2d_path_planning() {
     println!("\nRunning optimization...");
     let result = optimizer.optimize().expect("Optimization failed");
 
-    // Print results
+    // Print results (extract data from result first)
     println!("\n Results:");
     println!("  Path found: {}", result.is_valid);
     println!("  Path cost: {:.2}", result.cost);
     println!("  Waypoints: {}", result.waypoints.len());
-    println!("  Iterations completed: {}", optimizer.get_iteration());
 
-    if result.waypoints.len() > 0 {
+    if !result.waypoints.is_empty() {
         println!("\n  Path waypoints:");
         for (i, wp) in result.waypoints.iter().enumerate() {
             println!("    {}: ({:.2}, {:.2}, {:.2})", i, wp.x, wp.y, wp.z);
         }
     }
+
+    // Get iteration count after result is no longer borrowed
+    let iteration_count = optimizer.get_iteration();
+    println!("  Iterations completed: {}", iteration_count);
 }
 
 /// Example 2: 3D path planning with obstacles
@@ -117,17 +114,21 @@ fn example_3d_with_obstacles() {
 
     // Add obstacles (buildings, mountains, no-fly zones)
     let obstacles = [
-        Obstacle::new(Position3D::new(30.0, 30.0, 20.0), 15.0),  // Building 1
-        Obstacle::new(Position3D::new(50.0, 60.0, 25.0), 12.0),  // Building 2
-        Obstacle::new(Position3D::new(70.0, 40.0, 15.0), 10.0),  // Mountain
-        Obstacle::new(Position3D::new(80.0, 80.0, 20.0), 18.0),  // Tower
+        Obstacle::new(Position3D::new(30.0, 30.0, 20.0), 15.0), // Building 1
+        Obstacle::new(Position3D::new(50.0, 60.0, 25.0), 12.0), // Building 2
+        Obstacle::new(Position3D::new(70.0, 40.0, 15.0), 10.0), // Mountain
+        Obstacle::new(Position3D::new(80.0, 80.0, 20.0), 18.0), // Tower
     ];
 
     println!("Added {} obstacles:", obstacles.len());
     for (i, obs) in obstacles.iter().enumerate() {
-        optimizer.add_obstacle(*obs).expect("Failed to add obstacle");
-        println!("  Obstacle {}: center=({:.1}, {:.1}, {:.1}), radius={:.1}",
-                 i, obs.center.x, obs.center.y, obs.center.z, obs.radius);
+        optimizer
+            .add_obstacle(*obs)
+            .expect("Failed to add obstacle");
+        println!(
+            "  Obstacle {}: center=({:.1}, {:.1}, {:.1}), radius={:.1}",
+            i, obs.center.x, obs.center.y, obs.center.z, obs.radius
+        );
     }
 
     // Run optimization
@@ -181,7 +182,8 @@ fn compare_aco_algorithms() {
             .expect("Failed to create optimizer");
 
         // Add some obstacles
-        optimizer.add_obstacle(Obstacle::new(Position3D::new(40.0, 40.0, 15.0), 12.0))
+        optimizer
+            .add_obstacle(Obstacle::new(Position3D::new(40.0, 40.0, 15.0), 12.0))
             .expect("Failed to add obstacle");
 
         let result = optimizer.optimize().expect("Optimization failed");
@@ -207,18 +209,18 @@ fn search_rescue_scenario() {
     let disaster_site = Position3D::new(200.0, 200.0, 25.0);
 
     // Flight bounds (urban area)
-    let bounds_min = Position3D::new(-20.0, -20.0, 10.0);  // Min altitude: 10m
+    let bounds_min = Position3D::new(-20.0, -20.0, 10.0); // Min altitude: 10m
     let bounds_max = Position3D::new(220.0, 220.0, 100.0); // Max altitude: 100m
 
     // Configure ACO for search & rescue (favor speed)
     let config = ACOConfig {
-        algorithm: ACOAlgorithm::ACS,  // Fast convergence
-        num_ants: 40,                   // More ants for thorough search
-        max_iterations: 200,            // More iterations for complex environment
+        algorithm: ACOAlgorithm::ACS, // Fast convergence
+        num_ants: 40,                 // More ants for thorough search
+        max_iterations: 200,          // More iterations for complex environment
         pheromone_init: 1.0,
-        evaporation_rate: 0.15,         // Higher evaporation for adaptability
+        evaporation_rate: 0.15, // Higher evaporation for adaptability
         alpha: 1.0,
-        beta: 3.0,                      // Strong heuristic influence (favor shorter paths)
+        beta: 3.0, // Strong heuristic influence (favor shorter paths)
     };
 
     let mut optimizer = ACOOptimizer::new(config, base, disaster_site, bounds_min, bounds_max)
@@ -227,7 +229,7 @@ fn search_rescue_scenario() {
     // Add urban obstacles (buildings)
     let buildings = [
         // Downtown area
-        (50.0, 40.0, 30.0, 20.0),   // (x, y, height, radius)
+        (50.0, 40.0, 30.0, 20.0), // (x, y, height, radius)
         (80.0, 60.0, 40.0, 25.0),
         (60.0, 100.0, 35.0, 18.0),
         (100.0, 80.0, 45.0, 22.0),
@@ -242,12 +244,20 @@ fn search_rescue_scenario() {
 
     println!("Urban environment:");
     println!("  {} buildings in flight path", buildings.len());
-    println!("  Altitude range: {:.0}m - {:.0}m", bounds_min.z, bounds_max.z);
-    println!("  Distance (straight line): {:.2}m", base.distance_to(&disaster_site));
+    println!(
+        "  Altitude range: {:.0}m - {:.0}m",
+        bounds_min.z, bounds_max.z
+    );
+    println!(
+        "  Distance (straight line): {:.2}m",
+        base.distance_to(&disaster_site)
+    );
 
     for (x, y, z, radius) in &buildings {
         let obstacle = Obstacle::new(Position3D::new(*x, *y, *z), *radius);
-        optimizer.add_obstacle(obstacle).expect("Failed to add obstacle");
+        optimizer
+            .add_obstacle(obstacle)
+            .expect("Failed to add obstacle");
     }
 
     println!("\nOptimizing flight path...");
@@ -264,22 +274,30 @@ fn search_rescue_scenario() {
     println!();
     println!("Path Metrics:");
     println!("  Total distance: {:.2} meters", result.cost);
-    println!("  Straight-line distance: {:.2} meters", base.distance_to(&disaster_site));
-    println!("  Path efficiency: {:.1}%",
-             (base.distance_to(&disaster_site) / result.cost) * 100.0);
+    println!(
+        "  Straight-line distance: {:.2} meters",
+        base.distance_to(&disaster_site)
+    );
+    println!(
+        "  Path efficiency: {:.1}%",
+        (base.distance_to(&disaster_site) / result.cost) * 100.0
+    );
     println!("  Number of waypoints: {}", result.waypoints.len());
     println!();
     println!("Flight Parameters:");
-    println!("  Average altitude: {:.2} meters",
-             result.waypoints.iter().map(|wp| wp.z).sum::<f32>() / result.waypoints.len() as f32);
-    println!("  Estimated flight time: {:.1} seconds (at 10 m/s)",
-             result.cost / 10.0);
+    println!(
+        "  Average altitude: {:.2} meters",
+        result.waypoints.iter().map(|wp| wp.z).sum::<f32>() / result.waypoints.len() as f32
+    );
+    println!(
+        "  Estimated flight time: {:.1} seconds (at 10 m/s)",
+        result.cost / 10.0
+    );
 
-    if result.waypoints.len() > 0 {
+    if !result.waypoints.is_empty() {
         println!("\nFlight Plan (waypoints):");
         for (i, wp) in result.waypoints.iter().enumerate() {
-            println!("  WP{}: ({:.1}, {:.1}, {:.1})",
-                     i, wp.x, wp.y, wp.z);
+            println!("  WP{}: ({:.1}, {:.1}, {:.1})", i, wp.x, wp.y, wp.z);
         }
     }
 
@@ -287,18 +305,11 @@ fn search_rescue_scenario() {
     println!("Drone can proceed with confidence on optimized path.");
 }
 
-// Placeholder for time function (implement based on target platform)
-fn get_current_time() -> u32 {
-    // TODO: Replace with actual time source
-    0
-}
-
-// Placeholder for printing (implement based on target platform)
-fn println(msg: &str) {
-    // TODO: Replace with actual output mechanism
-}
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
+// Get current time in milliseconds
+fn get_current_time() -> u128 {
+    let start = SystemTime::now();
+    start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_millis()
 }

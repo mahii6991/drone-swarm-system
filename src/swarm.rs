@@ -7,10 +7,10 @@
 //! - Collective decision making
 //! - Emergent behavior
 
-use crate::types::*;
 use crate::consensus::{ConsensusEngine, SwarmCommand};
-use crate::network::MeshNetwork;
 use crate::federated::FederatedCoordinator;
+use crate::network::MeshNetwork;
+use crate::types::*;
 use heapless::{FnvIndexMap, Vec};
 
 /// Swarm formation types
@@ -286,13 +286,16 @@ impl SwarmController {
         let mut final_vel = Velocity {
             vx: (formation_vel.vx * FORMATION_WEIGHT
                 + avoidance_vel.vx * AVOIDANCE_WEIGHT
-                + target_vel.vx * TARGET_WEIGHT).clamp(-100.0, 100.0),
+                + target_vel.vx * TARGET_WEIGHT)
+                .clamp(-100.0, 100.0),
             vy: (formation_vel.vy * FORMATION_WEIGHT
                 + avoidance_vel.vy * AVOIDANCE_WEIGHT
-                + target_vel.vy * TARGET_WEIGHT).clamp(-100.0, 100.0),
+                + target_vel.vy * TARGET_WEIGHT)
+                .clamp(-100.0, 100.0),
             vz: (formation_vel.vz * FORMATION_WEIGHT
                 + avoidance_vel.vz * AVOIDANCE_WEIGHT
-                + target_vel.vz * TARGET_WEIGHT).clamp(-100.0, 100.0),
+                + target_vel.vz * TARGET_WEIGHT)
+                .clamp(-100.0, 100.0),
         };
 
         // Limit to max speed
@@ -360,7 +363,9 @@ impl SwarmController {
         for state in self.swarm_states.values() {
             // Each drone should be near its formation position
             // This is a simplified check
-            let distance = state.position.distance_to(&self.compute_formation_position());
+            let distance = state
+                .position
+                .distance_to(&self.compute_formation_position());
             if distance > tolerance {
                 return false;
             }

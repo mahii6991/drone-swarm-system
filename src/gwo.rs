@@ -21,8 +21,8 @@
 #![forbid(unsafe_code)]
 
 use crate::types::*;
-use heapless::Vec;
 use core::f32;
+use heapless::Vec;
 
 /// Maximum number of wolves (search agents)
 pub const MAX_WOLVES: usize = 50;
@@ -155,9 +155,9 @@ impl Default for GWOConfig {
 pub struct GWOOptimizer {
     config: GWOConfig,
     wolves: Vec<Wolf, MAX_WOLVES>,
-    alpha: Wolf,  // Best solution
-    beta: Wolf,   // Second best
-    delta: Wolf,  // Third best
+    alpha: Wolf, // Best solution
+    beta: Wolf,  // Second best
+    delta: Wolf, // Third best
     bounds: Bounds,
     iteration: usize,
     a: f32, // Convergence parameter
@@ -306,7 +306,9 @@ impl GWOOptimizer {
 
             // Average of three positions
             let x_new = (x1 + x2 + x3) / 3.0;
-            new_position.push(x_new).map_err(|_| SwarmError::BufferFull)?;
+            new_position
+                .push(x_new)
+                .map_err(|_| SwarmError::BufferFull)?;
         }
 
         Ok(())
@@ -346,7 +348,9 @@ impl GWOOptimizer {
 
             // Weighted combination
             let x_new = 0.5 * x_gwo + 0.5 * x_pso;
-            new_position.push(x_new).map_err(|_| SwarmError::BufferFull)?;
+            new_position
+                .push(x_new)
+                .map_err(|_| SwarmError::BufferFull)?;
         }
 
         Ok(())
@@ -376,7 +380,9 @@ impl GWOOptimizer {
             let levy = self.levy_flight(seed);
             let x_new = x1 + levy * 0.01 * (self.bounds.upper[d] - self.bounds.lower[d]);
 
-            new_position.push(x_new).map_err(|_| SwarmError::BufferFull)?;
+            new_position
+                .push(x_new)
+                .map_err(|_| SwarmError::BufferFull)?;
         }
 
         Ok(())
@@ -392,10 +398,9 @@ impl GWOOptimizer {
     /// Lévy flight step
     fn levy_flight(&self, seed: usize) -> f32 {
         let beta = 1.5;
-        let sigma = (
-            gamma_function(1.0 + beta) * (beta * f32::consts::PI / 2.0).sin() /
-            (gamma_function((1.0 + beta) / 2.0) * beta * 2.0_f32.powf((beta - 1.0) / 2.0))
-        ).powf(1.0 / beta);
+        let sigma = (gamma_function(1.0 + beta) * (beta * f32::consts::PI / 2.0).sin()
+            / (gamma_function((1.0 + beta) / 2.0) * beta * 2.0_f32.powf((beta - 1.0) / 2.0)))
+        .powf(1.0 / beta);
 
         let u = pseudo_random(seed) * sigma;
         let v = pseudo_random(seed + 1);
@@ -445,12 +450,11 @@ fn gamma_function(z: f32) -> f32 {
         f32::consts::PI / ((f32::consts::PI * z).sin() * gamma_function(1.0 - z))
     } else {
         let z = z - 1.0;
-        let x = 0.99999999997092 +
-                0.57721566490153 / (z + 1.0) +
-                (-0.65587807152026) / (z + 2.0) +
-                0.42002635034095 / (z + 3.0);
-        (2.0 * f32::consts::PI).sqrt() / z.exp() *
-        (z / f32::consts::E).powf(z + 0.5) * x
+        let x = 0.99999999997092
+            + 0.57721566490153 / (z + 1.0)
+            + (-0.65587807152026) / (z + 2.0)
+            + 0.42002635034095 / (z + 3.0);
+        (2.0 * f32::consts::PI).sqrt() / z.exp() * (z / f32::consts::E).powf(z + 0.5) * x
     }
 }
 
@@ -503,7 +507,10 @@ mod tests {
     fn rastrigin_function(x: &[f32]) -> f32 {
         let n = x.len() as f32;
         let a = 10.0;
-        a * n + x.iter().map(|&xi| xi * xi - a * (2.0 * f32::consts::PI * xi).cos()).sum::<f32>()
+        a * n
+            + x.iter()
+                .map(|&xi| xi * xi - a * (2.0 * f32::consts::PI * xi).cos())
+                .sum::<f32>()
     }
 
     #[test]

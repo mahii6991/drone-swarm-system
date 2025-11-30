@@ -7,7 +7,7 @@
 //! cargo run --example time_benchmark --release
 //! ```
 
-use drone_swarm_system::{init_time_source, get_time_ms, get_time_us, delay_ms};
+use drone_swarm_system::{delay_ms, get_time_ms, get_time_us, init_time_source};
 
 fn main() {
     println!("═══════════════════════════════════════════════════════════");
@@ -59,8 +59,10 @@ fn test_millisecond_accuracy() {
 
         let status = if error_pct < 5.0 { "✓" } else { "✗" };
 
-        println!("  {} Delay: {} ms → Actual: {} ms (error: {} ms, {:.2}%)",
-                 status, delay, elapsed, error, error_pct);
+        println!(
+            "  {} Delay: {} ms → Actual: {} ms (error: {} ms, {:.2}%)",
+            status, delay, elapsed, error, error_pct
+        );
     }
 }
 
@@ -107,12 +109,7 @@ fn test_monotonicity() {
 }
 
 fn test_delay_accuracy() {
-    let test_cases = [
-        (1, "1 ms"),
-        (5, "5 ms"),
-        (10, "10 ms"),
-        (50, "50 ms"),
-    ];
+    let test_cases = [(1, "1 ms"), (5, "5 ms"), (10, "10 ms"), (50, "50 ms")];
 
     for (delay, description) in &test_cases {
         let measurements: Vec<u64> = (0..10)

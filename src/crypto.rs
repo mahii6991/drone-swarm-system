@@ -11,12 +11,12 @@
 
 use crate::types::*;
 use crate::KEY_SIZE;
-use chacha20poly1305::{ChaCha20Poly1305, Nonce, Tag};
 use aead::{AeadInPlace, KeyInit};
+use blake3::Hasher as Blake3Hasher;
+use chacha20poly1305::{ChaCha20Poly1305, Nonce, Tag};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use heapless::Vec;
 use sha3::{Digest, Sha3_256};
-use blake3::Hasher as Blake3Hasher;
 
 /// Authentication tag size
 pub const TAG_SIZE: usize = 16;
@@ -61,8 +61,8 @@ impl CryptoContext {
         let symmetric_key: [u8; 32] = hasher.finalize().into();
 
         // Initialize cipher once (BUG-002 FIX: Avoid reinitializing on every encryption)
-        let cipher = ChaCha20Poly1305::new_from_slice(&symmetric_key)
-            .expect("32-byte key is always valid");
+        let cipher =
+            ChaCha20Poly1305::new_from_slice(&symmetric_key).expect("32-byte key is always valid");
 
         Self {
             symmetric_key,
@@ -82,7 +82,8 @@ impl CryptoContext {
         associated_data: &[u8],
     ) -> Result<Vec<u8, 2048>> {
         // BUG-001 FIX: Generate unique nonce with overflow protection
-        self.nonce_counter = self.nonce_counter
+        self.nonce_counter = self
+            .nonce_counter
             .checked_add(1)
             .ok_or(SwarmError::CryptoError)?; // Fail securely on overflow
 
@@ -97,7 +98,8 @@ impl CryptoContext {
             .extend_from_slice(plaintext)
             .map_err(|_| SwarmError::BufferFull)?;
 
-        let tag = self.cipher
+        let tag = self
+            .cipher
             .encrypt_in_place_detached(nonce, associated_data, &mut buffer)
             .map_err(|_| SwarmError::CryptoError)?;
 

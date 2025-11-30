@@ -16,7 +16,7 @@
 
 #[cfg(feature = "std")]
 fn main() {
-    use drone_swarm_system::{init_time_source, get_time_ms, get_time_us, delay_ms};
+    use drone_swarm_system::{delay_ms, get_time_ms, get_time_us, init_time_source};
 
     println!("ESP32 Time Source Example (simulated on std)");
     println!("=============================================\n");
@@ -66,7 +66,7 @@ fn main() {
 
 #[cfg(target_arch = "xtensa")]
 mod esp32_example {
-    use drone_swarm_system::{init_time_source, get_time_ms, delay_ms};
+    use drone_swarm_system::{delay_ms, get_time_ms, init_time_source};
 
     // Typical ESP32 entry point
     // #[entry]

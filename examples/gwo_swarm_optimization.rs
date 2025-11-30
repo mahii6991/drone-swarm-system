@@ -9,16 +9,9 @@
 //! - Different GWO variants comparison
 //! - Real-world swarm coordination scenarios
 
-#![no_std]
-#![no_main]
-
-extern crate drone_swarm_system;
-
 use drone_swarm_system::gwo::*;
-use drone_swarm_system::types::*;
 
-#[no_mangle]
-pub extern "C" fn main() -> ! {
+fn main() {
     // Example 1: Simple optimization (Sphere function)
     example_sphere_optimization();
 
@@ -33,8 +26,6 @@ pub extern "C" fn main() -> ! {
 
     // Example 5: Real-world swarm coordination
     swarm_coordination_scenario();
-
-    loop {}
 }
 
 /// Example 1: Simple optimization using sphere function
@@ -51,8 +42,8 @@ fn example_sphere_optimization() {
     config.variant = GWOVariant::Standard;
 
     // Define search space
-    let bounds = Bounds::uniform(config.dimensions, -100.0, 100.0)
-        .expect("Failed to create bounds");
+    let bounds =
+        Bounds::uniform(config.dimensions, -100.0, 100.0).expect("Failed to create bounds");
 
     println!("Configuration:");
     println!("  Algorithm: Standard GWO");
@@ -62,30 +53,34 @@ fn example_sphere_optimization() {
     println!("  Search space: [-100, 100]^{}", config.dimensions);
 
     // Create optimizer
-    let mut optimizer = GWOOptimizer::new(config, bounds)
-        .expect("Failed to create optimizer");
+    let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
     // Define fitness function (sphere)
-    let sphere_fn = |x: &[f32]| -> f32 {
-        x.iter().map(|&xi| xi * xi).sum()
-    };
+    let sphere_fn = |x: &[f32]| -> f32 { x.iter().map(|&xi| xi * xi).sum() };
 
     println!("\nOptimizing...");
     let start_time = get_current_time();
     let result = optimizer.optimize(sphere_fn).expect("Optimization failed");
     let elapsed = get_current_time() - start_time;
 
+    // Extract data from result
+    let best_fitness = result.fitness;
+    let best_position: Vec<_> = result.position.iter().copied().collect();
+
+    // Get iteration count after result is no longer borrowed
+    let iterations = optimizer.get_iteration();
+
     // Print results
     println!("\nResults:");
-    println!("  Best fitness: {:.6}", result.fitness);
-    println!("  Iterations: {}", optimizer.get_iteration());
+    println!("  Best fitness: {:.6}", best_fitness);
+    println!("  Iterations: {}", iterations);
     println!("  Time: {} ms", elapsed);
     println!("\n  Best solution:");
-    for (i, &val) in result.position.iter().enumerate() {
+    for (i, val) in best_position.iter().enumerate() {
         println!("    x{} = {:.6}", i, val);
     }
 
-    if result.fitness < 0.01 {
+    if best_fitness < 0.01 {
         println!("\n  ✓ Successfully converged to global minimum!");
     }
 }
@@ -105,8 +100,7 @@ fn example_rastrigin_optimization() {
     config.variant = GWOVariant::Improved;
     config.adaptive = true;
 
-    let bounds = Bounds::uniform(config.dimensions, -5.12, 5.12)
-        .expect("Failed to create bounds");
+    let bounds = Bounds::uniform(config.dimensions, -5.12, 5.12).expect("Failed to create bounds");
 
     println!("Configuration:");
     println!("  Algorithm: Improved GWO (IGWO)");
@@ -115,30 +109,40 @@ fn example_rastrigin_optimization() {
     println!("  Iterations: {}", config.max_iterations);
     println!("  Adaptive parameters: {}", config.adaptive);
 
-    let mut optimizer = GWOOptimizer::new(config, bounds)
-        .expect("Failed to create optimizer");
+    let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
     // Rastrigin function
     let rastrigin_fn = |x: &[f32]| -> f32 {
         let n = x.len() as f32;
         let a = 10.0;
-        a * n + x.iter().map(|&xi| {
-            xi * xi - a * (2.0 * core::f32::consts::PI * xi).cos()
-        }).sum::<f32>()
+        a * n
+            + x.iter()
+                .map(|&xi| xi * xi - a * (2.0 * core::f32::consts::PI * xi).cos())
+                .sum::<f32>()
     };
 
     println!("\nOptimizing (this is a challenging problem)...");
-    let result = optimizer.optimize(rastrigin_fn).expect("Optimization failed");
+    let result = optimizer
+        .optimize(rastrigin_fn)
+        .expect("Optimization failed");
+
+    // Extract fitness before calling other optimizer methods
+    let best_fitness = result.fitness;
+
+    // Get other fitness values after result is no longer borrowed
+    let alpha_fitness = optimizer.get_best().fitness;
+    let beta_fitness = optimizer.get_beta().fitness;
+    let delta_fitness = optimizer.get_delta().fitness;
 
     println!("\nResults:");
-    println!("  Best fitness: {:.6}", result.fitness);
-    println!("  Alpha (best): {:.6}", optimizer.get_best().fitness);
-    println!("  Beta (2nd best): {:.6}", optimizer.get_beta().fitness);
-    println!("  Delta (3rd best): {:.6}", optimizer.get_delta().fitness);
+    println!("  Best fitness: {:.6}", best_fitness);
+    println!("  Alpha (best): {:.6}", alpha_fitness);
+    println!("  Beta (2nd best): {:.6}", beta_fitness);
+    println!("  Delta (3rd best): {:.6}", delta_fitness);
 
-    if result.fitness < 1.0 {
+    if best_fitness < 1.0 {
         println!("\n  ✓ Excellent! Near-optimal solution found!");
-    } else if result.fitness < 10.0 {
+    } else if best_fitness < 10.0 {
         println!("\n  ✓ Good solution found!");
     } else {
         println!("\n  • Reasonable solution found (Rastrigin is very challenging)");
@@ -195,8 +199,7 @@ fn example_formation_optimization() {
     println!("  Cohesion weight: 0-1");
     println!("  Separation weight: 0-1");
 
-    let mut optimizer = GWOOptimizer::new(config, bounds)
-        .expect("Failed to create optimizer");
+    let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
     // Fitness function: balance formation quality, energy, and safety
     let formation_fitness = |params: &[f32]| -> f32 {
@@ -215,15 +218,16 @@ fn example_formation_optimization() {
             + (separation - 0.5).abs() * 10.0;
 
         // Safety margin (penalize too close or too low)
-        let safety_cost = if spacing < 10.0 { 100.0 } else { 0.0 }
-            + if altitude < 25.0 { 50.0 } else { 0.0 };
+        let safety_cost =
+            if spacing < 10.0 { 100.0 } else { 0.0 } + if altitude < 25.0 { 50.0 } else { 0.0 };
 
         // Total fitness (minimize)
         energy_cost + quality_cost + safety_cost
     };
 
     println!("\nOptimizing formation parameters...");
-    let result = optimizer.optimize(formation_fitness)
+    let result = optimizer
+        .optimize(formation_fitness)
         .expect("Optimization failed");
 
     println!("\nOptimal Formation Parameters:");
@@ -271,21 +275,27 @@ fn compare_gwo_variants() {
             adaptive: true,
         };
 
-        let bounds = Bounds::uniform(config.dimensions, -5.0, 10.0)
-            .expect("Failed to create bounds");
+        let bounds =
+            Bounds::uniform(config.dimensions, -5.0, 10.0).expect("Failed to create bounds");
 
-        let mut optimizer = GWOOptimizer::new(config, bounds)
-            .expect("Failed to create optimizer");
+        let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
-        let result = optimizer.optimize(&rosenbrock)
+        let result = optimizer
+            .optimize(rosenbrock)
             .expect("Optimization failed");
 
         println!("{}:", name);
         println!("  Best fitness: {:.6}", result.fitness);
-        println!("  Convergence quality: {}",
-                 if result.fitness < 1.0 { "Excellent" }
-                 else if result.fitness < 10.0 { "Good" }
-                 else { "Fair" });
+        println!(
+            "  Convergence quality: {}",
+            if result.fitness < 1.0 {
+                "Excellent"
+            } else if result.fitness < 10.0 {
+                "Good"
+            } else {
+                "Fair"
+            }
+        );
         println!();
     }
 }
@@ -339,8 +349,7 @@ fn swarm_coordination_scenario() {
     println!("  Rotation period: 30-300 seconds");
     println!("  Altitude: 30-120 meters");
 
-    let mut optimizer = GWOOptimizer::new(config, bounds)
-        .expect("Failed to create optimizer");
+    let mut optimizer = GWOOptimizer::new(config, bounds).expect("Failed to create optimizer");
 
     // Multi-objective fitness function
     let patrol_fitness = |params: &[f32]| -> f32 {
@@ -351,19 +360,19 @@ fn swarm_coordination_scenario() {
         let altitude = params[4];
 
         // Coverage score (larger radius = better coverage)
-        let coverage_score = 1000.0 - patrol_radius;  // Minimize negative coverage
+        let coverage_score = 1000.0 - patrol_radius; // Minimize negative coverage
 
         // Energy cost (higher speed = more energy)
         let energy_cost = patrol_speed * patrol_speed * 10.0;
 
         // Formation efficiency (some formations are more efficient)
         let formation_cost = match formation_type as i32 {
-            0 => 0.0,   // Circle - excellent
-            1 => 5.0,   // Grid - good
-            2 => 10.0,  // Line - fair
-            3 => 3.0,   // V - very good
-            4 => 7.0,   // Star - good
-            _ => 20.0,  // Invalid
+            0 => 0.0,  // Circle - excellent
+            1 => 5.0,  // Grid - good
+            2 => 10.0, // Line - fair
+            3 => 3.0,  // V - very good
+            4 => 7.0,  // Star - good
+            _ => 20.0, // Invalid
         };
 
         // Rotation efficiency (moderate period is best)
@@ -378,7 +387,8 @@ fn swarm_coordination_scenario() {
 
     println!("\nOptimizing patrol parameters...");
     let start_time = get_current_time();
-    let result = optimizer.optimize(patrol_fitness)
+    let result = optimizer
+        .optimize(patrol_fitness)
         .expect("Optimization failed");
     let elapsed = get_current_time() - start_time;
 
@@ -395,12 +405,22 @@ fn swarm_coordination_scenario() {
     println!("  Patrol altitude: {:.1} meters", result.position[4]);
     println!();
     println!("Performance Metrics:");
-    println!("  Coverage area: {:.0} m²",
-             core::f32::consts::PI * result.position[0] * result.position[0]);
-    println!("  Patrol cycle time: {:.1} seconds",
-             2.0 * core::f32::consts::PI * result.position[0] / result.position[1]);
-    println!("  Energy efficiency: {}",
-             if result.position[1] < 8.0 { "High" } else { "Moderate" });
+    println!(
+        "  Coverage area: {:.0} m²",
+        core::f32::consts::PI * result.position[0] * result.position[0]
+    );
+    println!(
+        "  Patrol cycle time: {:.1} seconds",
+        2.0 * core::f32::consts::PI * result.position[0] / result.position[1]
+    );
+    println!(
+        "  Energy efficiency: {}",
+        if result.position[1] < 8.0 {
+            "High"
+        } else {
+            "Moderate"
+        }
+    );
     println!("  Optimization time: {} ms", elapsed);
     println!();
     println!("  ✓ Patrol pattern optimized!");
@@ -410,14 +430,4 @@ fn swarm_coordination_scenario() {
 // Placeholder for time function
 fn get_current_time() -> u32 {
     0
-}
-
-// Placeholder for printing
-fn println(msg: &str) {
-    // TODO: Replace with actual output
-}
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
 }
