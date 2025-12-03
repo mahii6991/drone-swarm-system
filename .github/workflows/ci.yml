@@ -48,10 +48,10 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --verbose --all-features
+        run: cargo test --locked --verbose --all-features
 
       - name: Run doc tests
-        run: cargo test --doc --all-features
+        run: cargo test --locked --doc --all-features
 
   fmt:
     name: Rustfmt
@@ -85,7 +85,7 @@ jobs:
           components: clippy
 
       - name: Run clippy
-        run: cargo clippy --lib --all-features -- -D warnings
+        run: cargo clippy --locked --lib --all-features -- -D warnings
 
   build:
     name: Build
@@ -108,7 +108,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --verbose
+        run: cargo build --locked --release --verbose
         continue-on-error: ${{ matrix.target != 'x86_64-unknown-linux-gnu' }}
 
   security-audit:
@@ -169,7 +169,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build documentation
-        run: cargo doc --no-deps --all-features
+        run: cargo doc --locked --no-deps --all-features
 
       - name: Check for broken links
         continue-on-error: true
@@ -195,4 +195,4 @@ jobs:
       - name: Check minimal versions
         run: |
           cargo +nightly update -Z minimal-versions
-          cargo +stable check --all-features
+          cargo +stable check --locked --all-features
