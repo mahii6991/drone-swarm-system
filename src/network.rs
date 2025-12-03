@@ -22,6 +22,7 @@ pub const MAX_NETWORK_HOPS: u8 = 15;
 
 /// Message types for mesh networking
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum NetworkMessage {
     /// Hello message for neighbor discovery
     Hello {
@@ -127,9 +128,9 @@ pub struct MeshNetwork {
 struct QueuedMessage {
     destination: DroneId,
     payload: Vec<u8, 1024>,
-    #[allow(dead_code)]  // Reserved for retry logic
+    #[allow(dead_code)] // Reserved for retry logic
     retry_count: u8,
-    #[allow(dead_code)]  // Reserved for timeout handling
+    #[allow(dead_code)] // Reserved for timeout handling
     timestamp: u64,
 }
 
@@ -239,6 +240,7 @@ impl MeshNetwork {
             #[cfg(feature = "hardware")]
             unimplemented!("Hardware radio transmission not yet implemented");
 
+            #[cfg(not(feature = "hardware"))]
             Ok(())
         } else {
             // No route - queue and initiate route discovery
@@ -330,8 +332,11 @@ impl MeshNetwork {
             #[cfg(feature = "hardware")]
             unimplemented!("Hardware radio forwarding not yet implemented");
 
-            self.stats.messages_sent += 1;
-            Ok(())
+            #[cfg(not(feature = "hardware"))]
+            {
+                self.stats.messages_sent += 1;
+                Ok(())
+            }
         } else {
             // No route - drop or queue
             self.stats.messages_dropped += 1;
@@ -385,6 +390,7 @@ impl MeshNetwork {
             #[cfg(feature = "hardware")]
             unimplemented!("Hardware radio forwarding not yet implemented");
         }
+        #[cfg(not(feature = "hardware"))]
         Ok(())
     }
 
@@ -432,6 +438,7 @@ impl MeshNetwork {
         #[cfg(feature = "hardware")]
         unimplemented!("Link state routing table updates not yet implemented");
 
+        #[cfg(not(feature = "hardware"))]
         Ok(())
     }
 
@@ -489,6 +496,7 @@ impl MeshNetwork {
         #[cfg(feature = "hardware")]
         unimplemented!("Hardware broadcast not yet implemented");
 
+        #[cfg(not(feature = "hardware"))]
         Ok(())
     }
 
@@ -502,6 +510,7 @@ impl MeshNetwork {
         #[cfg(feature = "hardware")]
         unimplemented!("Hardware heartbeat transmission not yet implemented");
 
+        #[cfg(not(feature = "hardware"))]
         Ok(())
     }
 

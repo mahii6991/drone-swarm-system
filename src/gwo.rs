@@ -267,7 +267,7 @@ impl GWOOptimizer {
     }
 
     /// Standard GWO position update
-    #[allow(non_snake_case)]  // Mathematical notation from GWO algorithm
+    #[allow(non_snake_case)] // Mathematical notation from GWO algorithm
     fn standard_position_update(
         &self,
         wolf_id: usize,
@@ -313,7 +313,7 @@ impl GWOOptimizer {
     }
 
     /// Hybrid GWO-PSO position update
-    #[allow(non_snake_case)]  // Mathematical notation from GWO algorithm
+    #[allow(non_snake_case)] // Mathematical notation from GWO algorithm
     fn hybrid_position_update(
         &self,
         wolf_id: usize,
@@ -356,7 +356,7 @@ impl GWOOptimizer {
     }
 
     /// Chaotic GWO position update (Lévy flight inspired)
-    #[allow(non_snake_case)]  // Mathematical notation from GWO algorithm
+    #[allow(non_snake_case)] // Mathematical notation from GWO algorithm
     fn chaotic_position_update(
         &self,
         wolf_id: usize,

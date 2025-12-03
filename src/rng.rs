@@ -20,8 +20,7 @@ impl SecureRng {
     pub fn new() -> Result<Self> {
         // Verify that getrandom is available
         let mut test_buf = [0u8; 1];
-        getrandom::getrandom(&mut test_buf)
-            .map_err(|_| SwarmError::CryptoError)?;
+        getrandom::getrandom(&mut test_buf).map_err(|_| SwarmError::CryptoError)?;
 
         Ok(Self {
             _marker: core::marker::PhantomData,
@@ -31,16 +30,14 @@ impl SecureRng {
     /// Generate a random u32
     pub fn next_u32(&mut self) -> Result<u32> {
         let mut buf = [0u8; 4];
-        getrandom::getrandom(&mut buf)
-            .map_err(|_| SwarmError::CryptoError)?;
+        getrandom::getrandom(&mut buf).map_err(|_| SwarmError::CryptoError)?;
         Ok(u32::from_le_bytes(buf))
     }
 
     /// Generate a random u64
     pub fn next_u64(&mut self) -> Result<u64> {
         let mut buf = [0u8; 8];
-        getrandom::getrandom(&mut buf)
-            .map_err(|_| SwarmError::CryptoError)?;
+        getrandom::getrandom(&mut buf).map_err(|_| SwarmError::CryptoError)?;
         Ok(u64::from_le_bytes(buf))
     }
 
@@ -59,8 +56,7 @@ impl SecureRng {
 
     /// Fill buffer with random bytes
     pub fn fill_bytes(&mut self, dest: &mut [u8]) -> Result<()> {
-        getrandom::getrandom(dest)
-            .map_err(|_| SwarmError::CryptoError)
+        getrandom::getrandom(dest).map_err(|_| SwarmError::CryptoError)
     }
 }
 

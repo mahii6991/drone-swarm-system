@@ -114,9 +114,7 @@ impl Obstacle {
         let fz = self.center.z - p1.z;
 
         // Project onto segment
-        let t = ((fx * dx + fy * dy + fz * dz) / (dx * dx + dy * dy + dz * dz))
-            .max(0.0)
-            .min(1.0);
+        let t = ((fx * dx + fy * dy + fz * dz) / (dx * dx + dy * dy + dz * dz)).clamp(0.0, 1.0);
 
         // Closest point on segment
         let closest = Position3D::new(p1.x + t * dx, p1.y + t * dy, p1.z + t * dz);
@@ -131,6 +129,12 @@ pub struct Path {
     pub waypoints: Vec<Position3D, MAX_WAYPOINTS>,
     pub cost: f32,
     pub is_valid: bool,
+}
+
+impl Default for Path {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Path {
@@ -357,9 +361,9 @@ pub struct ACOOptimizer {
     start: Position3D,
     goal: Position3D,
     obstacles: Vec<Obstacle, MAX_OBSTACLES>,
-    #[allow(dead_code)]  // Reserved for bounds checking
+    #[allow(dead_code)] // Reserved for bounds checking
     bounds_min: Position3D,
-    #[allow(dead_code)]  // Reserved for bounds checking
+    #[allow(dead_code)] // Reserved for bounds checking
     bounds_max: Position3D,
 }
 
@@ -526,7 +530,7 @@ impl ACOOptimizer {
         // Apply bounds (MMAS)
         if self.config.algorithm == ACOAlgorithm::MMAS {
             for pheromone in self.pheromones.iter_mut() {
-                *pheromone = pheromone.max(TAU_MIN).min(TAU_MAX);
+                *pheromone = pheromone.clamp(TAU_MIN, TAU_MAX);
             }
         }
 

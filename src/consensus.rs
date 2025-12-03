@@ -35,7 +35,7 @@ pub struct LogEntry {
 
 /// Commands that can be replicated via consensus
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(clippy::large_enum_variant)]  // UpdateMission needs large buffer for parameters
+#[allow(clippy::large_enum_variant)] // UpdateMission needs large buffer for parameters
 pub enum SwarmCommand {
     /// Assign task to drone
     AssignTask { drone: DroneId, task_id: u64 },
@@ -53,7 +53,7 @@ pub enum SwarmCommand {
 
 /// Consensus messages for Raft protocol
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(clippy::large_enum_variant)]  // AppendEntries needs large buffer for log replication
+#[allow(clippy::large_enum_variant)] // AppendEntries needs large buffer for log replication
 pub enum ConsensusMessage {
     /// Request vote from other nodes
     RequestVote {
@@ -479,7 +479,7 @@ impl ConsensusEngine {
     /// Create append entries message
     fn create_append_entries(&self, follower: DroneId) -> Result<ConsensusMessage> {
         let next_idx = *self.next_index.get(&follower.as_u64()).unwrap_or(&1);
-        let prev_log_index = if next_idx > 1 { next_idx - 1 } else { 0 };
+        let prev_log_index = next_idx.saturating_sub(1);
         let prev_log_term = if prev_log_index > 0 {
             self.log
                 .get(prev_log_index as usize - 1)

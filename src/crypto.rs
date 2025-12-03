@@ -58,7 +58,7 @@ impl CryptoContext {
         // Derive symmetric key from seed using SHA3-256
         let mut hasher = Sha3_256::new();
         hasher.update(b"droneswarm-v1-symmetric-key"); // Better domain separation
-        hasher.update(&seed);
+        hasher.update(seed);
         let symmetric_key: [u8; 32] = hasher.finalize().into();
 
         // Initialize cipher once (BUG-002 FIX: Avoid reinitializing on every encryption)

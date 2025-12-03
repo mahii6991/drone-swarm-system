@@ -21,7 +21,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 #![deny(warnings)]
-#![allow(missing_docs)]  // TODO: Remove in Phase 2 and fix all missing documentation
+#![allow(missing_docs)] // TODO: Remove in Phase 2 and fix all missing documentation
 #![allow(clippy::manual_range_contains)]
 #![allow(clippy::needless_borrow)]
 #![allow(clippy::excessive_precision)]
@@ -30,24 +30,23 @@
 #![allow(clippy::should_implement_trait)]
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::default_trait_access)]
-#![allow(clippy::clamp_range_without_using_clamp)]
 #![allow(clippy::manual_div_ceil)]
 
+pub mod aco;
 pub mod config;
 pub mod consensus;
 pub mod crypto;
 pub mod fault_tolerance;
 pub mod federated;
+pub mod gwo;
 pub mod network;
+pub mod pso;
+pub mod pso_advanced;
 pub mod rng;
 pub mod security;
 pub mod swarm;
-pub mod types;
-pub mod aco;
-pub mod gwo;
-pub mod pso;
-pub mod pso_advanced;
 pub mod time_abstraction;
+pub mod types;
 
 pub use config::*;
 pub use time_abstraction::{delay_ms, get_time_ms, get_time_us, init_time_source};
