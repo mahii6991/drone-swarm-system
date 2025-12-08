@@ -84,3 +84,14 @@ credentials.json
 # Internal documentation (allow public docs, ignore internal)
 Documentation/
 docs/internal/
+
+# Markdown files (keep locally, not in repo)
+*.md
+**/*.md
+
+# Shell scripts (keep locally)
+*.sh
+
+# Docs config files
+docs/Gemfile
+docs/_config.yml
