@@ -280,6 +280,13 @@ impl SimulationState {
 
         let comm_range = 80.0; // Communication range
 
+        // Update node positions first
+        for (i, drone) in self.drones.iter().enumerate() {
+            if let Some(node) = self.network.nodes.get_mut(i) {
+                node.position = drone.position;
+            }
+        }
+
         for i in 0..self.drones.len() {
             let mut neighbor_count = 0;
             for j in (i + 1)..self.drones.len() {
@@ -349,11 +356,11 @@ impl SimulationState {
                 drone.battery = drone.battery.saturating_sub(1);
             }
 
-            // Update status based on battery
-            drone.status = if drone.battery < 20 {
-                DroneStatus::Returning
-            } else if drone.battery < 10 {
+            // Update status based on battery (check lowest threshold first)
+            drone.status = if drone.battery < 10 {
                 DroneStatus::Emergency
+            } else if drone.battery < 20 {
+                DroneStatus::Returning
             } else {
                 DroneStatus::Active
             };
