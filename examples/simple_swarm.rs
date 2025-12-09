@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     println!("  - Using BLAKE3/SHA3 hashing");
 
     // Step 4: Initialize network layer
-    let mut network = MeshNetwork::new(drone_id);
+    let network = MeshNetwork::new(drone_id);
     println!("✓ Mesh network initialized");
 
     // Step 5: Initialize consensus engine (Raft-based)

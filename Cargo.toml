@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "visualization"]
+
 [package]
 name = "drone-swarm-system"
 version = "0.1.0"

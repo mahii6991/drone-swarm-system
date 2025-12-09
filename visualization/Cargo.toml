@@ -1,0 +1,22 @@
+[package]
+name = "drone-swarm-visualization"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mahendra Singh Rajpoot"]
+description = "Real-time visualization for drone swarm algorithms"
+
+[dependencies]
+# GUI Framework
+eframe = "0.29"
+egui = "0.29"
+egui_plot = "0.29"
+
+# Core library
+drone-swarm-system = { path = ".." }
+
+# Utilities
+rand = "0.8"
+
+[[bin]]
+name = "drone-viz"
+path = "src/main.rs"
