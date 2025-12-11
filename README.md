@@ -17,14 +17,27 @@
 
 ---
 
+## Status
+
+| Component | Status | Notes |
+|:----------|:------:|:------|
+| Swarm Algorithms (PSO, ACO, GWO, WOA) | :white_check_mark: Production-ready | Bio-inspired optimization suite |
+| Cryptography (ChaCha20, Ed25519) | :white_check_mark: Production-ready | Military-grade encryption |
+| SwarmRaft Consensus + Merkle Trees | :white_check_mark: Production-ready | Tamper-evident distributed consensus |
+| Hardware Integration (ESP32 WiFi mesh) | :construction: In Progress | Embedded mesh networking |
+| MAVLink Protocol | :clipboard: Roadmap | Flight controller communication |
+| Flight Controller Integration | :clipboard: Roadmap | PX4/ArduPilot support |
+
+---
+
 ## Features
 
 | | Feature | Description |
 |:---:|:---|:---|
 | :shield: | **Military-Grade Security** | ChaCha20-Poly1305 encryption, Ed25519 signatures, Byzantine fault tolerance |
 | :globe_with_meridians: | **Mesh Networking** | Adaptive multi-hop routing supporting 100+ drones with self-healing topology |
-| :brain: | **Swarm Intelligence** | PSO, ACO, GWO optimization algorithms for collective decision making |
-| :handshake: | **Distributed Consensus** | Raft-based SwarmRaft protocol for leader election and state agreement |
+| :brain: | **Swarm Intelligence** | PSO, ACO, GWO, WOA bio-inspired optimization for collective decision making |
+| :handshake: | **Distributed Consensus** | SwarmRaft protocol with Merkle tree verification for tamper-evident logging |
 | :robot: | **Federated Learning** | Privacy-preserving decentralized model training across the swarm |
 | :zap: | **Real-Time Performance** | Zero heap allocation, `no_std` compatible for embedded systems |
 
@@ -98,24 +111,24 @@ network.update_position(position);
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      DRONE SWARM SYSTEM                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │   Security  │  │  Consensus  │  │   Network   │             │
-│  │  ChaCha20   │  │  SwarmRaft  │  │    Mesh     │             │
-│  │   Ed25519   │  │   Leader    │  │   Routing   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │     PSO     │  │     ACO     │  │     GWO     │             │
-│  │  Particle   │  │  Ant Colony │  │  Grey Wolf  │             │
-│  │   Swarm     │  │ Optimization│  │  Optimizer  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-│  ┌─────────────────────────────────────────────────┐           │
-│  │              Federated Learning                  │           │
-│  │         Privacy-Preserving ML Training           │           │
-│  └─────────────────────────────────────────────────┘           │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         DRONE SWARM SYSTEM                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │   Security  │  │  Consensus  │  │   Network   │  │   Merkle    │    │
+│  │  ChaCha20   │  │  SwarmRaft  │  │    Mesh     │  │    Tree     │    │
+│  │   Ed25519   │  │   Leader    │  │   Routing   │  │  Logging    │    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │     PSO     │  │     ACO     │  │     GWO     │  │     WOA     │    │
+│  │  Particle   │  │  Ant Colony │  │  Grey Wolf  │  │    Whale    │    │
+│  │   Swarm     │  │ Optimization│  │  Optimizer  │  │ Optimization│    │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                      Federated Learning                          │   │
+│  │              Privacy-Preserving ML Training Across Swarm         │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -127,13 +140,17 @@ network.update_position(position);
 | `crypto` | ChaCha20-Poly1305 encryption & Ed25519 signatures |
 | `network` | Adaptive mesh routing with multi-hop support |
 | `consensus` | SwarmRaft distributed consensus protocol |
+| `merkle` | Merkle tree for tamper-evident logging |
 | `swarm` | Formation control & collective behavior |
 | `pso` | Particle Swarm Optimization |
+| `pso_advanced` | Advanced PSO with adaptive parameters |
 | `aco` | Ant Colony Optimization for path planning |
 | `gwo` | Grey Wolf Optimizer for swarm coordination |
+| `woa` | Whale Optimization Algorithm for path planning |
 | `federated` | Decentralized federated learning |
 | `fault_tolerance` | Self-healing & automatic failover |
 | `security` | Intrusion detection & threat mitigation |
+| `time_abstraction` | Hardware-agnostic time abstraction layer |
 
 ---
 
@@ -181,14 +198,18 @@ cargo run -p drone-swarm-visualization --release
 
 ```
 drone-swarm-system/
-├── src/                    # Core library
+├── src/                    # Core library (18 modules)
 │   ├── crypto.rs           # Encryption & signatures
 │   ├── network.rs          # Mesh networking
 │   ├── consensus.rs        # SwarmRaft protocol
+│   ├── merkle.rs           # Merkle tree logging
 │   ├── swarm.rs            # Formation control
 │   ├── pso.rs              # Particle Swarm Optimization
+│   ├── pso_advanced.rs     # Advanced PSO variants
 │   ├── aco.rs              # Ant Colony Optimization
 │   ├── gwo.rs              # Grey Wolf Optimizer
+│   ├── woa.rs              # Whale Optimization Algorithm
+│   ├── time_abstraction.rs # Hardware-agnostic time
 │   └── ...
 ├── visualization/          # Interactive GUI
 │   └── src/
@@ -204,7 +225,14 @@ drone-swarm-system/
 
 ## License
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+| Component | License |
+|:----------|:--------|
+| Core algorithms (PSO, ACO, GWO, WOA, etc.) | Apache 2.0 (Open Source) |
+| Enterprise features | Commercial license available |
+
+**Core Library:** Licensed under the [Apache License 2.0](LICENSE) - free for personal and commercial use.
+
+**Enterprise Licensing:** For commercial deployments requiring dedicated support, custom integrations, or proprietary features, contact: **m.s.rajpoot20@gmail.com**
 
 ---
 
