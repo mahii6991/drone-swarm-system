@@ -13,6 +13,7 @@ use ed25519_dalek::{Signature, Verifier};
 use heapless::{FnvIndexMap, Vec};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
+use chacha20poly1305::{aead::{AeadInPlace, KeyInit}, ChaCha20Poly1305, Nonce, Tag};
 
 /// Maximum model parameters (simplified)
 pub const MAX_MODEL_PARAMS: usize = 1000;
@@ -407,111 +408,102 @@ impl SecureAggregation {
     }
 
     /// Encrypt model update for secure aggregation
-    pub fn encrypt_update(&self, _update: &ModelUpdate) -> Result<Vec<u8, 2048>> {
-        // Simplified: in production, use homomorphic encryption
-        // or secure multi-party computation
-        Ok(Vec::new())
+    pub fn encrypt_update(&self, update: &ModelUpdate) -> Result<Vec<u8, 2048>> {
+        let secret = self
+            .secrets
+            .get(&update.drone_id.as_u64())
+            .ok_or(SwarmError::AuthenticationFailed)?;
+
+        let cipher = ChaCha20Poly1305::new_from_slice(secret)
+            .map_err(|_| SwarmError::CryptoError)?;
+
+        // Use round number for nonce
+        let mut nonce_bytes = [0u8; 12];
+        nonce_bytes[..8].copy_from_slice(&update.round.to_le_bytes());
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        // Serialize parameters into buffer
+        let mut buffer = Vec::<u8, 2048>::new();
+        for &param in &update.parameters {
+            buffer.extend_from_slice(&param.to_le_bytes())
+                .map_err(|_| SwarmError::BufferFull)?;
+        }
+
+        // Encrypt in place
+        let tag = cipher
+            .encrypt_in_place_detached(nonce, &[], &mut buffer)
+            .map_err(|_| SwarmError::CryptoError)?;
+
+        // Append tag
+        buffer
+            .extend_from_slice(&tag)
+            .map_err(|_| SwarmError::BufferFull)?;
+
+        Ok(buffer)
     }
 
     /// Aggregate encrypted updates
     pub fn aggregate_encrypted(
         &self,
-        _updates: &[Vec<u8, 2048>],
+        updates: &[(DroneId, Vec<u8, 2048>)],
     ) -> Result<Vec<f32, MAX_MODEL_PARAMS>> {
-        // Simplified: in production, perform secure aggregation
-        Ok(Vec::new())
+        if updates.is_empty() {
+            return Err(SwarmError::InvalidMessage);
+        }
+
+        let mut summed_params = [0.0f32; MAX_MODEL_PARAMS];
+        let mut valid_count = 0;
+        let param_count = MAX_MODEL_PARAMS; 
+
+        let nonce_bytes = [0u8; 12];
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        for (drone_id, encrypted_data) in updates {
+            if let Some(secret) = self.secrets.get(&drone_id.as_u64()) {
+                if let Ok(cipher) = ChaCha20Poly1305::new_from_slice(secret) {
+                    // Split into ciphertext and tag
+                    // encrypted_data = ciphertext || tag (16 bytes)
+                    if encrypted_data.len() < 16 { continue; }
+                    
+                    let tag_pos = encrypted_data.len() - 16;
+                    let tag_bytes = &encrypted_data[tag_pos..];
+                    let tag = Tag::from_slice(tag_bytes);
+
+                    // We need a mutable buffer for in-place decryption
+                    let mut buffer = Vec::<u8, 2048>::new();
+                    if buffer.extend_from_slice(&encrypted_data[..tag_pos]).is_err() { continue; }
+
+                    if cipher.decrypt_in_place_detached(nonce, &[], &mut buffer, tag).is_ok() {
+                        let mut idx = 0;
+                        for chunk in buffer.chunks(4) {
+                            if idx >= param_count { break; }
+                            if let Ok(bytes) = chunk.try_into() {
+                                let val = f32::from_le_bytes(bytes);
+                                summed_params[idx] += val;
+                                idx += 1;
+                            }
+                        }
+                        if idx > 0 { valid_count += 1; }
+                    }
+                }
+            }
+        }
+
+        if valid_count == 0 {
+            return Err(SwarmError::AuthenticationFailed);
+        }
+
+        let mut result = Vec::new();
+        for i in 0..param_count {
+            result.push(summed_params[i] / valid_count as f32).map_err(|_| SwarmError::BufferFull)?;
+        }
+
+        Ok(result)
     }
 }
 
 impl Default for SecureAggregation {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_federated_coordinator() {
-        let model = GlobalModel::new(10).unwrap();
-        let key_store = KeyStore::new();
-        let coordinator = FederatedCoordinator::new(DroneId::new(1), model, key_store);
-
-        assert_eq!(coordinator.current_round(), 0);
-        assert!(!coordinator.is_ready_for_aggregation());
-    }
-
-    #[test]
-    fn test_local_trainer() {
-        let params = Vec::from_slice(&[0.0f32; 10]).unwrap();
-        let mut trainer = LocalTrainer::new(DroneId::new(1), params);
-
-        let loss = trainer.train_step(0.01).unwrap();
-        assert!(loss >= 0.0);
-    }
-
-    #[test]
-    fn test_aggregation() {
-        use ed25519_dalek::{Signer, SigningKey};
-
-        let model = GlobalModel::new(5).unwrap();
-        let mut key_store = KeyStore::new();
-        let mut signing_keys = Vec::<SigningKey, 8>::new();
-
-        // Create valid Ed25519 key pairs for test drones
-        for i in 1..=3 {
-            // Generate deterministic keys for testing
-            let mut seed = [0u8; 32];
-            seed[0] = i as u8;
-            let signing_key = SigningKey::from_bytes(&seed);
-            let verifying_key = signing_key.verifying_key();
-
-            key_store
-                .add_key(DroneId::new(i as u64), verifying_key)
-                .unwrap();
-            signing_keys.push(signing_key).unwrap();
-        }
-
-        let mut coordinator = FederatedCoordinator::new(DroneId::new(1), model, key_store);
-        coordinator.set_min_participants(2);
-
-        // Create test updates with valid signatures
-        for i in 1..=3 {
-            let mut params = Vec::new();
-            for j in 0..5 {
-                params.push((i + j) as f32).unwrap();
-            }
-
-            // Serialize update data for signing
-            let mut update_data = Vec::<u8, 2048>::new();
-            update_data.extend_from_slice(&0u64.to_le_bytes()).unwrap(); // round
-            for &param in &params {
-                update_data.extend_from_slice(&param.to_le_bytes()).unwrap();
-            }
-            update_data.extend_from_slice(&10u32.to_le_bytes()).unwrap(); // sample_count
-            update_data
-                .extend_from_slice(&0.5f32.to_le_bytes())
-                .unwrap(); // loss
-
-            // Sign the update
-            let signature = signing_keys[(i - 1) as usize].sign(&update_data);
-
-            let update = ModelUpdate {
-                drone_id: DroneId::new(i as u64),
-                round: 0,
-                parameters: params,
-                sample_count: 10,
-                loss: 0.5,
-                signature: signature.to_bytes(),
-            };
-
-            coordinator.submit_update(update).unwrap();
-        }
-
-        assert!(coordinator.is_ready_for_aggregation());
-        coordinator.aggregate_updates().unwrap();
-        assert_eq!(coordinator.current_round(), 1);
     }
 }

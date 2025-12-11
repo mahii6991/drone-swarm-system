@@ -8,6 +8,7 @@
 //! - Resource-constrained optimization
 
 use crate::types::*;
+use crate::merkle::MerkleTree;
 use heapless::{FnvIndexMap, Vec};
 use serde::{Deserialize, Serialize};
 
@@ -548,6 +549,31 @@ impl ConsensusEngine {
     /// Get current leader
     pub fn leader(&self) -> Option<DroneId> {
         self.current_leader
+    }
+
+    /// Compute Merkle Root of the current log (SwarmRaft feature)
+    ///
+    /// This provides a tamper-evident summary of the distributed ledger state.
+    /// Used for periodic checkpoints and verifying log consistency across the swarm.
+    pub fn get_log_merkle_root(&self) -> Result<[u8; 32]> {
+        let mut tree = MerkleTree::<1024>::new(); // Max log size
+        
+        let mut serialized_log: Vec<Vec<u8, 256>, 100> = Vec::new();
+        
+        for entry in self.log.iter().take(100) { // Limit to 100 for stack safety
+            let mut buf = Vec::<u8, 256>::new();
+            if postcard::to_slice(&entry.command, &mut buf).is_ok() {
+                serialized_log.push(buf).ok();
+            }
+        }
+        
+        // Now create references
+        let mut refs: Vec<&[u8], 100> = Vec::new();
+        for buf in &serialized_log {
+            refs.push(buf).ok();
+        }
+        
+        tree.compute_root(&refs)
     }
 
     /// Get current time (uses centralized time abstraction)

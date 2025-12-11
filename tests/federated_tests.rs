@@ -288,7 +288,9 @@ mod secure_aggregation_tests {
 
     #[test]
     fn test_encrypt_update() {
-        let sa = SecureAggregation::new();
+        let mut sa = SecureAggregation::new();
+        // Add participant first so we have a secret
+        sa.add_participant(DroneId::new(1), [0u8; 32]).unwrap();
 
         let mut params = heapless::Vec::new();
         for i in 0..5 {
@@ -305,19 +307,39 @@ mod secure_aggregation_tests {
         };
 
         let encrypted = sa.encrypt_update(&update).unwrap();
-        // Simplified implementation returns empty
-        assert!(encrypted.is_empty());
+        // Implementation now returns encrypted data
+        assert!(!encrypted.is_empty());
     }
 
     #[test]
     fn test_aggregate_encrypted() {
-        let sa = SecureAggregation::new();
+        let mut sa = SecureAggregation::new();
+        let secret = [1u8; 32];
+        sa.add_participant(DroneId::new(1), secret).unwrap();
 
-        let updates: [heapless::Vec<u8, 2048>; 0] = [];
+        let mut params = heapless::Vec::new();
+        for i in 0..5 {
+            params.push(i as f32).unwrap();
+        }
+
+        let update = ModelUpdate {
+            drone_id: DroneId::new(1),
+            round: 0,
+            parameters: params,
+            sample_count: 10,
+            loss: 0.5,
+            signature: [0u8; 64],
+        };
+
+        let encrypted = sa.encrypt_update(&update).unwrap();
+        
+        let updates = [(DroneId::new(1), encrypted)];
         let result = sa.aggregate_encrypted(&updates).unwrap();
 
-        // Simplified implementation returns empty
-        assert!(result.is_empty());
+        // Should recover parameters (single update average = update)
+        assert!(!result.is_empty());
+        assert!((result[0] - 0.0).abs() < 1e-6);
+        assert!((result[4] - 4.0).abs() < 1e-6);
     }
 }
 

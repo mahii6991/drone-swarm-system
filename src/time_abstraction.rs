@@ -35,6 +35,10 @@ use core::sync::atomic::{AtomicU64, Ordering};
 /// Updated by platform-specific interrupt handlers or direct reads
 static GLOBAL_TIME_MS: AtomicU64 = AtomicU64::new(0);
 
+/// Global cycles per microsecond (for high precision timing)
+#[cfg(all(target_arch = "arm", not(feature = "std")))]
+static CYCLES_PER_US: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
+
 /// Time source trait for dependency injection and testing
 pub trait TimeSource: Send + Sync {
     /// Get current time in milliseconds
@@ -104,10 +108,13 @@ impl ArmCortexMTimeSource {
             core::ptr::write_volatile(SYST_CSR, 0x7);
         }
 
+        let cycles_per_us = cpu_freq_hz / 1_000_000;
+        CYCLES_PER_US.store(cycles_per_us, Ordering::Relaxed);
+
         Self {
             cpu_freq_hz,
             cycles_per_ms: cpu_freq_hz / 1000,
-            cycles_per_us: cpu_freq_hz / 1_000_000,
+            cycles_per_us,
         }
     }
 
@@ -429,9 +436,22 @@ pub fn get_time_us() -> u64 {
 
     #[cfg(all(target_arch = "arm", not(feature = "std")))]
     {
-        // Would need to create a static time source instance
-        // For now, approximate from milliseconds
-        get_time_ms() * 1000
+        // High precision: combine interrupt counter with DWT cycle counter
+        let ms = GLOBAL_TIME_MS.load(Ordering::Relaxed);
+        
+        let cycles_per_us = CYCLES_PER_US.load(Ordering::Relaxed);
+        if cycles_per_us > 0 {
+            // Read DWT cycle counter directly
+            let cycles = unsafe {
+                const DWT_CYCCNT: *const u32 = 0xE0001004 as *const u32;
+                core::ptr::read_volatile(DWT_CYCCNT)
+            };
+            let us_in_current_ms = cycles / cycles_per_us;
+            (ms * 1000) + (us_in_current_ms as u64)
+        } else {
+            // Fallback if not initialized (though init_time_source should be called)
+            ms * 1000
+        }
     }
 
     #[cfg(target_arch = "xtensa")]

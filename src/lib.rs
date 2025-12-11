@@ -65,10 +65,14 @@ pub mod fault_tolerance;
 pub mod federated;
 /// Grey Wolf Optimizer (GWO) for multi-objective optimization
 pub mod gwo;
+/// Merkle Tree for tamper-evident logging (SwarmRaft)
+pub mod merkle;
 /// Mesh networking, routing, and message passing
 pub mod network;
 /// Particle Swarm Optimization (PSO) for formation control
 pub mod pso;
+/// Whale Optimization Algorithm (WOA) for advanced path planning
+pub mod woa;
 /// Advanced PSO variants with adaptive parameters
 pub mod pso_advanced;
 /// Cryptographically secure random number generation
@@ -77,6 +81,8 @@ pub mod rng;
 pub mod security;
 /// High-level swarm coordination and behavior management
 pub mod swarm;
+/// Task allocation logic for the swarm
+pub mod task_allocation;
 /// Platform-agnostic time abstraction for embedded systems
 pub mod time_abstraction;
 /// Core types (Position, Velocity, DroneId, NetworkAddress, etc.)
