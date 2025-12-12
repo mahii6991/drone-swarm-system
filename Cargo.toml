@@ -103,3 +103,8 @@ required-features = ["simulation"]
 name = "aco_sitl_navigation"
 path = "examples/aco_sitl_navigation.rs"
 required-features = ["simulation"]
+
+[[example]]
+name = "multi_drone_swarm_demo"
+path = "examples/multi_drone_swarm_demo.rs"
+required-features = ["std"]
