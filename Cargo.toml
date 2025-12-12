@@ -93,3 +93,8 @@ required-features = ["simulation"]
 name = "swarm_sitl"
 path = "examples/swarm_sitl.rs"
 required-features = ["simulation", "tokio"]
+
+[[example]]
+name = "pso_sitl_formation"
+path = "examples/pso_sitl_formation.rs"
+required-features = ["simulation"]
